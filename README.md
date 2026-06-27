@@ -1,50 +1,69 @@
-# Artworks Studio OS
+# 🎬 Artworks Studio OS
 
 > **Create Stories. Build Worlds. Direct Intelligence.**
 
-Artworks Studio OS is an AI-native operating system for cinematic production.
+![Status](https://img.shields.io/badge/status-Active%20Development-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Rather than being another AI application, image generator, chatbot, or prompt manager, Artworks Studio OS unifies the entire filmmaking process into a single production environment where stories evolve from an idea to a finished film.
+## The Operating System for AI‑Native Filmmaking
 
-## Vision
+Artworks Studio OS is not another AI application.
 
-Become the operating system for AI-assisted filmmaking.
+It is a production operating system designed to unify every stage of filmmaking—from the first idea to the final delivery—inside a single, intelligent workspace.
 
-The platform brings together:
+Instead of switching between chatbots, image generators, prompt managers, documentation tools, file explorers, and editors, filmmakers work inside one production environment where every asset, document, AI interaction, and decision is connected.
 
-- Story development
-- Pre-production
-- Production documentation
-- Character, environment and asset management
+---
+
+## Why Artworks Studio OS?
+
+Modern AI filmmaking is fragmented.
+
+Artworks Studio OS replaces disconnected tools with a production-centric workflow built around storytelling, continuity, documentation, and intelligent automation.
+
+### Core Principles
+
+- 🎭 Story First
+- 🎬 Production Before Generation
+- 🤖 AI as a Production Team
+- 🧠 Single Source of Truth
+- 🔗 Knowledge Graph Architecture
+- 🛠️ Open & Extensible
+- 🎨 Creativity Stays Human
+
+---
+
+## Production Departments
+
+- Story Development
+- Production Management
+- Character Design
+- Environment Design
 - Storyboarding
-- AI orchestration
-- Prompt generation
-- Version control
-- Automation
+- Cinematography
+- Animation
+- Visual Effects
+- Editorial
 - Publishing
 
-## Philosophy
+Each department is powered by specialized AI agents while remaining under the filmmaker's creative direction.
 
-Artworks Studio OS is built on a few core principles:
+---
 
-- **Story First** – Technology exists to serve storytelling.
-- **AI is the Crew** – AI behaves like a production team, not a replacement for artists.
-- **Production Before Generation** – Documentation and planning come before prompts.
-- **Single Source of Truth** – Every asset has one authoritative representation.
-- **Knowledge Over Files** – Productions are built from connected relationships rather than isolated documents.
-- **Creativity Stays Human** – AI automates production while filmmakers direct the creative vision.
+## Planned Architecture
 
-## Core Concepts
-
-- Production-centric workflows
-- AI Departments
+- Production Engine
 - Knowledge Graph
 - Production Context Engine
-- Local-first architecture
-- Native Git integration
-- Extensible plugin system
+- Documentation System
+- Asset Library
+- AI Orchestration Layer
+- Git Integration
+- Plugin SDK
 
-## Planned MVP
+---
+
+## MVP
 
 - Project Manager
 - Documentation Workspace
@@ -56,20 +75,55 @@ Artworks Studio OS is built on a few core principles:
 - AI Workspace
 - Git Integration
 
-## Long-Term Vision
+---
 
-Artworks Studio OS aims to become the complete production operating system for AI-native filmmaking, allowing creators to move from concept to final delivery without leaving the platform.
+## Roadmap
 
-Every production strengthens the platform.
-Every asset contributes context.
-Every AI interaction becomes part of a unified production workflow.
+### Version 1
+Production Foundation
+
+### Version 2
+Knowledge Graph
+
+### Version 3
+Visual Node Pipeline
+
+### Version 4
+Production Automation
+
+### Version 5
+Collaborative Cloud Studio
+
+---
+
+## Repository Structure
+
+```text
+/docs
+/src
+/plugins
+/assets
+/examples
+```
+
+---
+
+## Contributing
+
+Every contribution should support the project's philosophy:
+
+> Will this make filmmaking more creative, more organized, and more human?
+
+If the answer is yes, build it.
+
+---
+
+## Vision
+
+Artworks Studio OS exists to become the operating system for AI-native filmmaking, empowering creators to direct intelligent production teams through structured workflows, connected knowledge, and intelligent automation.
+
+---
 
 ## Motto
 
 **Create Stories. Build Worlds. Direct Intelligence.**
-
----
-
-> We are not building software for artificial intelligence.
->
-> We are building software for human imagination.
