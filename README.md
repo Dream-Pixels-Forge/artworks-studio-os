@@ -1,102 +1,110 @@
 # 🎬 Artworks Studio OS
 
-> **Create Stories. Build Worlds. Direct Intelligence.**
-
-![Status](https://img.shields.io/badge/status-Active%20Development-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-
-## The Operating System for AI‑Native Filmmaking
-
-Artworks Studio OS is not another AI application.
-
-It is a production operating system designed to unify every stage of filmmaking—from the first idea to the final delivery—inside a single, intelligent workspace.
-
-Instead of switching between chatbots, image generators, prompt managers, documentation tools, file explorers, and editors, filmmakers work inside one production environment where every asset, document, AI interaction, and decision is connected.
+<p align="center">
+<h3 align="center">The Operating System for AI‑Native Filmmaking</h3>
+<p align="center"><b>Create Stories. Build Worlds. Direct Intelligence.</b></p>
+</p>
 
 ---
 
-## Why Artworks Studio OS?
+## We Are Not Building Another AI Application
 
-Modern AI filmmaking is fragmented.
+Artworks Studio OS is a production operating system built specifically for filmmakers.
 
-Artworks Studio OS replaces disconnected tools with a production-centric workflow built around storytelling, continuity, documentation, and intelligent automation.
+Instead of combining disconnected AI tools, it unifies the complete filmmaking lifecycle into one intelligent production environment.
 
-### Core Principles
+From the first spark of an idea to the final exported film, every creative decision, production asset, AI interaction, document, and revision lives inside a single production ecosystem.
+
+## Why It Exists
+
+Today's AI filmmaking workflow is fragmented.
+
+Writers use chatbots.
+Artists use image generators.
+Animators use video generators.
+Teams maintain documentation elsewhere.
+Assets become duplicated.
+Characters drift.
+Continuity breaks.
+
+Artworks Studio OS replaces fragmented workflows with a connected production platform.
+
+---
+
+# Production Workflow
+
+Idea → Story Bible → World Building → Characters → Storyboards → AI Production → Assets → Animation → VFX → Editorial → Publishing
+
+---
+
+# Core Pillars
 
 - 🎭 Story First
 - 🎬 Production Before Generation
-- 🤖 AI as a Production Team
-- 🧠 Single Source of Truth
-- 🔗 Knowledge Graph Architecture
-- 🛠️ Open & Extensible
-- 🎨 Creativity Stays Human
+- 🤖 AI as Specialized Departments
+- 🧠 Knowledge Graph
+- 🔄 Single Source of Truth
+- 📚 Production Documentation
+- ⚡ Intelligent Automation
+- 🔌 Plugin Ecosystem
+- 🌍 Local First
 
 ---
 
-## Production Departments
+# AI Departments
 
-- Story Development
-- Production Management
-- Character Design
-- Environment Design
-- Storyboarding
-- Cinematography
-- Animation
-- Visual Effects
-- Editorial
-- Publishing
+Instead of one assistant, Artworks Studio OS provides an entire production crew.
 
-Each department is powered by specialized AI agents while remaining under the filmmaker's creative direction.
+- Creative Director
+- Writer
+- Production Manager
+- Character Designer
+- Environment Designer
+- Storyboard Artist
+- Prompt Director
+- Cinematographer
+- Animator
+- VFX Supervisor
+- Editor
+- Publisher
 
----
-
-## Planned Architecture
-
-- Production Engine
-- Knowledge Graph
-- Production Context Engine
-- Documentation System
-- Asset Library
-- AI Orchestration Layer
-- Git Integration
-- Plugin SDK
+AI is the crew.
+The filmmaker remains the director.
 
 ---
 
-## MVP
+# Planned Architecture
 
-- Project Manager
-- Documentation Workspace
-- Markdown Editor
-- Character Bible
-- Storyboard Workspace
-- Asset Explorer
-- Prompt Library
-- AI Workspace
-- Git Integration
-
----
-
-## Roadmap
-
-### Version 1
-Production Foundation
-
-### Version 2
-Knowledge Graph
-
-### Version 3
-Visual Node Pipeline
-
-### Version 4
-Production Automation
-
-### Version 5
-Collaborative Cloud Studio
+Production Engine
+├── Knowledge Graph
+├── Production Context Engine
+├── Documentation
+├── Asset Library
+├── AI Orchestration
+├── Git Integration
+└── Plugin SDK
 
 ---
 
-## Repository Structure
+# Roadmap
+
+✅ Foundation
+- Project Management
+- Documentation
+- Git
+- Asset Management
+
+🚧 Knowledge Graph
+
+🚧 Visual Production Pipeline
+
+🚧 AI Production Automation
+
+🚧 Collaborative Cloud Studio
+
+---
+
+# Repository Structure
 
 ```text
 /docs
@@ -104,13 +112,25 @@ Collaborative Cloud Studio
 /plugins
 /assets
 /examples
+/tests
 ```
 
 ---
 
-## Contributing
+# Guiding Philosophy
 
-Every contribution should support the project's philosophy:
+Technology exists to serve storytelling.
+
+The operating system translates artistic intent into technical execution.
+
+Creativity stays human.
+AI handles production.
+
+---
+
+# Contributing
+
+Every pull request should answer one question:
 
 > Will this make filmmaking more creative, more organized, and more human?
 
@@ -118,12 +138,12 @@ If the answer is yes, build it.
 
 ---
 
-## Vision
+# Vision
 
-Artworks Studio OS exists to become the operating system for AI-native filmmaking, empowering creators to direct intelligent production teams through structured workflows, connected knowledge, and intelligent automation.
+To become the world's leading operating system for AI-native filmmaking, enabling creators everywhere to build feature-quality cinematic productions through structured workflows, connected knowledge, and intelligent automation.
 
 ---
 
-## Motto
+# Motto
 
 **Create Stories. Build Worlds. Direct Intelligence.**
