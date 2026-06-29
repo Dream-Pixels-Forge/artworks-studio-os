@@ -1,0 +1,61 @@
+name: Platform
+
+on:
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "tsconfig*.json"
+      - "electron.vite.config.*"
+      - "eslint.config.*"
+      - ".github/workflows/platform.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "tsconfig*.json"
+      - "electron.vite.config.*"
+      - "eslint.config.*"
+      - ".github/workflows/platform.yml"
+
+jobs:
+  check:
+    name: Lint, typecheck, build, test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Node 22 LTS — better-sqlite3 ships prebuilt binaries for it on
+          # all platforms, avoiding fragile native compilation in CI.
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test

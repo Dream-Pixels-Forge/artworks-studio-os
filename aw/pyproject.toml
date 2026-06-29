@@ -1,0 +1,84 @@
+[project]
+name = "artworks-cli"
+version = "0.2.0"
+description = "The command layer for the Artworks Studio OS ecosystem — a production OS for AI-native filmmaking."
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+authors = [
+  { name = "Dream Pixels Forge", email = "dream.pixels.forge@gmail.com" },
+]
+keywords = [
+  "cli",
+  "filmmaking",
+  "ai",
+  "production",
+  "film",
+  "artworks-studio-os",
+  "studio",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Multimedia :: Video",
+  "Topic :: Text Processing :: Markup :: Markdown",
+  "Typing :: Typed",
+]
+dependencies = [
+  "pydantic-settings>=2.7.0",
+  "rich>=13.9.0",
+  "typer>=0.15.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Dream-Pixels-Forge/artworks-studio-os"
+Repository = "https://github.com/Dream-Pixels-Forge/artworks-studio-os"
+Issues = "https://github.com/Dream-Pixels-Forge/artworks-studio-os/issues"
+Changelog = "https://github.com/Dream-Pixels-Forge/artworks-studio-os/blob/main/aw/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+  "black>=24.10.0",
+  "pytest>=8.3.0",
+  "ruff>=0.8.0",
+]
+
+[project.scripts]
+aw = "aw.main:main"
+
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aw"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/aw",
+  "tests",
+  "README.md",
+  "LICENSE",
+  "CHANGELOG.md",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
