@@ -1,10 +1,11 @@
 """Doctor command."""
 
-from pathlib import Path
-
 import typer
 
 from aw.config import Settings, get_settings
+from aw.constants import VERSION
+from aw.services.production import get_active_production, list_productions
+from aw.services.studio import is_studio_home
 from aw.utils.console import create_console, success_panel
 
 
@@ -18,11 +19,23 @@ def run_doctor(settings: Settings) -> list[str]:
         Human-readable check results.
     """
 
-    return [
-        "CLI command layer: ready",
-        f"Studio home: {Path(settings.home)}",
+    home = settings.home
+    lines = [
+        f"CLI version: {VERSION}",
+        f"Studio home: {home}",
         f"Environment: {settings.environment}",
     ]
+
+    if is_studio_home(home):
+        lines.append("Studio workspace: initialized")
+        productions = list_productions(home)
+        lines.append(f"Productions: {len(productions)}")
+        active = get_active_production(home)
+        lines.append(f"Active production: {active.name if active else '(none)'}")
+    else:
+        lines.append("Studio workspace: not initialized (run 'aw studio init')")
+
+    return lines
 
 
 def register(app: typer.Typer) -> None:

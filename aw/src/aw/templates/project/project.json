@@ -1,0 +1,15 @@
+{
+  "schema": "artworks/production",
+  "schema_version": 1,
+  "uuid": "__UUID__",
+  "id": "__ID__",
+  "name": "__NAME__",
+  "type": "production",
+  "status": "__STATUS__",
+  "version": 1,
+  "created_at": "__CREATED_AT__",
+  "updated_at": "__CREATED_AT__",
+  "description": "__DESCRIPTION__",
+  "tags": [],
+  "metadata": {}
+}
