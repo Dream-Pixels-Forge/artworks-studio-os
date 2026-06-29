@@ -40,7 +40,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          # Node 22 LTS — better-sqlite3 ships prebuilt binaries for it on
+          # all platforms, avoiding fragile native compilation in CI.
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
