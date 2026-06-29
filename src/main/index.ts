@@ -12,13 +12,17 @@ import { config } from "@main/core/config.js";
 import { container, token } from "@main/core/service-container.js";
 import { MIGRATIONS } from "@main/database/migrations.js";
 import { StudioDatabase } from "@main/database/db.js";
+import { PluginRuntime } from "@main/plugins/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** DI token for the studio database connection. */
 export const DatabaseToken = token<StudioDatabase>("database");
 
+const BUILTIN_PLUGINS_DIR = join(__dirname, "../../../plugins");
+
 let database: StudioDatabase | undefined;
+let pluginRuntime: PluginRuntime | undefined;
 
 // Single-instance guard: focus the existing window if one is already running.
 const gotLock = app.requestSingleInstanceLock();
@@ -38,6 +42,13 @@ app.whenReady().then(async () => {
   database = await StudioDatabase.open(join(config.home, "studio.db"), MIGRATIONS);
   container.register(DatabaseToken, () => database!);
 
+  // Load and activate plugins before the window opens.
+  pluginRuntime = new PluginRuntime({
+    builtinDir: BUILTIN_PLUGINS_DIR,
+    userDir: join(config.home, "plugins"),
+  });
+  await pluginRuntime.start();
+
   createWindow({ indexHtmlPath: getIndexHtml() });
 
   app.on("activate", () => {
@@ -45,6 +56,15 @@ app.whenReady().then(async () => {
       createWindow({ indexHtmlPath: getIndexHtml() });
     }
   });
+});
+
+app.on("before-quit", async (event) => {
+  if (pluginRuntime) {
+    event.preventDefault();
+    await pluginRuntime.stop();
+    pluginRuntime = undefined;
+    app.quit();
+  }
 });
 
 app.on("window-all-closed", () => {
