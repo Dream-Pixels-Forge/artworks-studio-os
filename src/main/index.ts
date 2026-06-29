@@ -14,6 +14,7 @@ import { MIGRATIONS } from "@main/database/migrations.js";
 import { StudioDatabase } from "@main/database/db.js";
 import { PluginRuntime } from "@main/plugins/index.js";
 import { ThemeService, registerThemeIpc } from "@main/services/index.js";
+import { registerExplorerHandlers } from "@main/integrations/production-explorer/ipc-handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -54,6 +55,9 @@ app.whenReady().then(async () => {
   // Initialize theming (persistence + OS bridging).
   await themeService.init();
   registerThemeIpc(themeService);
+
+  // Register the project explorer IPC handlers.
+  registerExplorerHandlers();
 
   createWindow({ indexHtmlPath: getIndexHtml() });
 

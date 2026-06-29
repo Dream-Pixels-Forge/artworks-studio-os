@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { PRODUCT_NAME, TAGLINE } from "@shared/utils/index.js";
 import { CommandPalette, registerBuiltinCommands, useCommandPalette } from "../command-palette/index.js";
+import { ProjectExplorerPanel } from "../panels/project-explorer/project-explorer-panel.js";
 
 interface ArtworksGlobal {
   version: string;
@@ -25,20 +26,23 @@ export function StudioShell() {
   }, []);
 
   return (
-    <div className="studio-shell">
-      <header className="studio-shell__brand">
-        <h1 className="studio-shell__title">{PRODUCT_NAME}</h1>
-        <p className="studio-shell__tagline">{TAGLINE}</p>
-      </header>
-      <section className="studio-shell__status">
-        {api ? (
-          <p>
-            Foundation ready · CLI v{api.version} · <kbd>Ctrl</kbd>+<kbd>K</kbd> for commands
-          </p>
-        ) : (
-          <p>Loading studio…</p>
-        )}
-      </section>
+    <div className="studio-shell studio-shell--workspace">
+      <ProjectExplorerPanel />
+      <main className="studio-shell__main">
+        <header className="studio-shell__brand">
+          <h1 className="studio-shell__title">{PRODUCT_NAME}</h1>
+          <p className="studio-shell__tagline">{TAGLINE}</p>
+        </header>
+        <section className="studio-shell__status">
+          {api ? (
+            <p>
+              Foundation ready · CLI v{api.version} · <kbd>Ctrl</kbd>+<kbd>K</kbd> for commands
+            </p>
+          ) : (
+            <p>Loading studio…</p>
+          )}
+        </section>
+      </main>
       <CommandPalette open={palette.open} onClose={palette.close} onRun={palette.run} />
     </div>
   );

@@ -19,18 +19,6 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-declare global {
-  interface Window {
-    artworks: {
-      theme: {
-        get: () => Promise<{ mode: ThemeMode; resolvedTheme: ThemeName }>;
-        set: (mode: ThemeMode) => Promise<{ mode: ThemeMode; resolvedTheme: ThemeName }>;
-        onNativeUpdated: (cb: (resolved: ThemeName) => void) => () => void;
-      };
-    };
-  }
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>("studio-dark");
   const [resolvedTheme, setResolvedTheme] = useState<ThemeName>("studio-dark");
