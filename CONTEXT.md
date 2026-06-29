@@ -66,12 +66,19 @@ docs/vision.md
 
 docs/prd.md
 
+Phase Status
+
+Phase 0 (Foundation) — complete.
+
+CI/CD, platform scaffold (Electron + React + TS), design system, database
+schema, and the plugin SDK contract are in place. See CHANGELOG.md.
+
 Upcoming Work
 
-Knowledge Graph
+Phase 1 — Desktop Foundation
 
-Production Engine
+Plugin runtime (loads and sandboxes plugins against the SDK contract).
 
-Plugin SDK
+Live SQLite repositories (CRUD on the v1 schema).
 
-AI Departments
+AI departments.

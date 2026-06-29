@@ -1,0 +1,63 @@
+name: 🐛 Bug report
+description: Report something that is broken or behaves incorrectly
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report! Before you continue,
+        please search existing issues to avoid duplicates.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+      placeholder: "When I ran `aw project new SIGNAL`, I expected ... but instead ..."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce the behavior.
+      placeholder: |
+        1. Run `aw studio init`
+        2. Run `aw project new ...`
+        3. See error
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI (`aw`)
+        - Desktop app (Electron / renderer)
+        - Database
+        - Plugin SDK
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "CLI: `aw version`. App: check About. Leave N/A if unsure."
+      placeholder: "aw 0.2.0"
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and relevant tool versions.
+      placeholder: "OS: Windows 11. Node 24. Python 3.13."
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: Paste any relevant error output, stack traces, or screenshots. No credentials.
+      render: shell
+    validations:
+      required: false

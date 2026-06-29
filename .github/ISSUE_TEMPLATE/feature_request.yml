@@ -1,0 +1,57 @@
+name: ✨ Feature request
+description: Propose a new capability or improvement
+labels: ["feature", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature! Before you continue, please search
+        existing issues to avoid duplicates. Feature requests map to the
+        roadmap phases in `docs/roadmap.md` where possible.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What production friction or gap does this address? Who feels it?
+      placeholder: "As a filmmaker, I can't easily ... because ..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: The proposed solution
+      description: What you'd like to happen instead. Sketches, examples, or references welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI (`aw`)
+        - Desktop app (Electron / renderer)
+        - Database
+        - Plugin SDK
+        - Design system
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: roadmap-phase
+    attributes:
+      label: Roadmap phase (if known)
+      description: Which phase in `docs/roadmap.md` does this belong to?
+      options:
+        - Not sure / needs triage
+        - Phase 0 — Foundation
+        - Phase 1 — Desktop Foundation
+        - Phase 2 — Production Workspace
+        - Phase 3+ (later)
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches have you thought about?
+    validations:
+      required: false
