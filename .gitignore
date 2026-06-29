@@ -1,0 +1,15 @@
+# Source of truth — private reference materials, not part of the repo.
+/stf-document/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Node / Electron build output
+node_modules/
+out/
+dist/
+*.tsbuildinfo

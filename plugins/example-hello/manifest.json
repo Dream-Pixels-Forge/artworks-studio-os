@@ -1,0 +1,17 @@
+{
+  "id": "artworks.example-hello",
+  "name": "Hello, Studio",
+  "version": "0.1.0",
+  "author": "Dream Pixels Forge",
+  "category": "utility",
+  "description": "A reference plugin demonstrating the SDK contract: a command and an event subscription.",
+  "sdkVersion": "0.1.0",
+  "permissions": ["notification"],
+  "commands": [
+    {
+      "id": "hello.greet",
+      "title": "Hello: Greet the Studio",
+      "listensTo": ["project:opened"]
+    }
+  ]
+}
