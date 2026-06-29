@@ -8,8 +8,17 @@ import { app, BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { createWindow } from "@main/app/window.js";
+import { config } from "@main/core/config.js";
+import { container, token } from "@main/core/service-container.js";
+import { MIGRATIONS } from "@main/database/migrations.js";
+import { StudioDatabase } from "@main/database/db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/** DI token for the studio database connection. */
+export const DatabaseToken = token<StudioDatabase>("database");
+
+let database: StudioDatabase | undefined;
 
 // Single-instance guard: focus the existing window if one is already running.
 const gotLock = app.requestSingleInstanceLock();
@@ -24,7 +33,11 @@ app.on("second-instance", () => {
   }
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Open the studio database and run any pending migrations before the UI loads.
+  database = await StudioDatabase.open(join(config.home, "studio.db"), MIGRATIONS);
+  container.register(DatabaseToken, () => database!);
+
   createWindow({ indexHtmlPath: getIndexHtml() });
 
   app.on("activate", () => {
@@ -35,6 +48,7 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
+  database?.close();
   if (process.platform !== "darwin") app.quit();
 });
 
