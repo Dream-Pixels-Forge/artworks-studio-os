@@ -6,6 +6,7 @@
  */
 import { useEffect, useState } from "react";
 import { PRODUCT_NAME, TAGLINE } from "@shared/utils/index.js";
+import { CommandPalette, registerBuiltinCommands, useCommandPalette } from "../command-palette/index.js";
 
 interface ArtworksGlobal {
   version: string;
@@ -15,8 +16,10 @@ interface ArtworksGlobal {
 
 export function StudioShell() {
   const [api, setApi] = useState<ArtworksGlobal | null>(null);
+  const palette = useCommandPalette();
 
   useEffect(() => {
+    registerBuiltinCommands();
     const global = window as unknown as { artworks?: ArtworksGlobal };
     if (global.artworks) setApi(global.artworks);
   }, []);
@@ -30,12 +33,13 @@ export function StudioShell() {
       <section className="studio-shell__status">
         {api ? (
           <p>
-            Foundation ready · CLI v{api.version}
+            Foundation ready · CLI v{api.version} · <kbd>Ctrl</kbd>+<kbd>K</kbd> for commands
           </p>
         ) : (
           <p>Loading studio…</p>
         )}
       </section>
+      <CommandPalette open={palette.open} onClose={palette.close} onRun={palette.run} />
     </div>
   );
 }
