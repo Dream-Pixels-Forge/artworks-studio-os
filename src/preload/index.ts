@@ -36,6 +36,22 @@ const artworksApi = {
       return () => ipcRenderer.off("theme:native-updated", listener);
     },
   },
+
+  /** Project Explorer — browse productions in the studio home. */
+  explorer: {
+    listProductions: () =>
+      ipcRenderer.invoke("explorer:listProductions"),
+    getActive: () =>
+      ipcRenderer.invoke("explorer:getActive"),
+    open: (name: string) =>
+      ipcRenderer.invoke("explorer:open", name),
+    tree: (name: string) =>
+      ipcRenderer.invoke("explorer:tree", name),
+    expand: (path: string) =>
+      ipcRenderer.invoke("explorer:expand", path),
+    manifest: (name: string) =>
+      ipcRenderer.invoke("explorer:manifest", name),
+  },
 };
 
 contextBridge.exposeInMainWorld("artworks", artworksApi);
