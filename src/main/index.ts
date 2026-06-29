@@ -13,6 +13,7 @@ import { container, token } from "@main/core/service-container.js";
 import { MIGRATIONS } from "@main/database/migrations.js";
 import { StudioDatabase } from "@main/database/db.js";
 import { PluginRuntime } from "@main/plugins/index.js";
+import { ThemeService, registerThemeIpc } from "@main/services/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -21,6 +22,7 @@ export const DatabaseToken = token<StudioDatabase>("database");
 
 const BUILTIN_PLUGINS_DIR = join(__dirname, "../../../plugins");
 
+const themeService = new ThemeService();
 let database: StudioDatabase | undefined;
 let pluginRuntime: PluginRuntime | undefined;
 
@@ -48,6 +50,10 @@ app.whenReady().then(async () => {
     userDir: join(config.home, "plugins"),
   });
   await pluginRuntime.start();
+
+  // Initialize theming (persistence + OS bridging).
+  await themeService.init();
+  registerThemeIpc(themeService);
 
   createWindow({ indexHtmlPath: getIndexHtml() });
 
