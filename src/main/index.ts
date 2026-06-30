@@ -15,7 +15,7 @@ import { container, token } from "@main/core/service-container.js";
 import { MIGRATIONS } from "@main/database/migrations.js";
 import { StudioDatabase } from "@main/database/db.js";
 import { PluginRuntime } from "@main/plugins/index.js";
-import { ThemeService, registerThemeIpc } from "@main/services/index.js";
+import { ThemeService, registerThemeIpc, SettingsService, registerSettingsIpc, registerStudioStatusIpc } from "@main/services/index.js";
 import { registerExplorerHandlers } from "@main/integrations/production-explorer/ipc-handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +26,7 @@ export const DatabaseToken = token<StudioDatabase>("database");
 const BUILTIN_PLUGINS_DIR = join(__dirname, "../../../plugins");
 
 const themeService = new ThemeService();
+const settingsService = new SettingsService();
 const windowManager = new WindowManager();
 let database: StudioDatabase | undefined;
 let pluginRuntime: PluginRuntime | undefined;
@@ -58,6 +59,11 @@ app.whenReady().then(async () => {
   // Initialize theming (persistence + OS bridging).
   await themeService.init();
   registerThemeIpc(themeService);
+
+  // Initialize user preferences (persistence) + studio status (home/init).
+  await settingsService.init();
+  registerSettingsIpc(settingsService);
+  registerStudioStatusIpc();
 
   // Register the project explorer IPC handlers.
   registerExplorerHandlers();

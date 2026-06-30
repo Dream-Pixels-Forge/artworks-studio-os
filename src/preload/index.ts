@@ -14,17 +14,19 @@ type ResolvedTheme = "studio-dark" | "studio-light";
 /** Menu actions the renderer can react to (mirrors src/shared/window). */
 type MenuAction = "new-production" | "open-production";
 
+/** Preference keys (mirrors src/shared/settings). */
+type PreferenceKey = "default-production";
+
 const artworksApi = {
   /** Build metadata, for the About/version UI. */
   version: "0.1.0",
   product: "Artworks Studio OS",
   tagline: "Create Stories. Build Worlds. Direct Intelligence.",
 
-  /** Studio / production operations (backed by IPC, wired in Phase 1). */
+  /** Studio / production operations (studio home + init marker). */
   studio: {
-    async status(): Promise<{ initialized: boolean; home: string }> {
-      throw new Error("studio.status() not wired — arrives in Phase 1");
-    },
+    status: (): Promise<{ initialized: boolean; home: string }> =>
+      ipcRenderer.invoke("studio:status"),
   },
 
   /** Theme operations — runtime switching + persistence + OS-follow. */
@@ -83,6 +85,19 @@ const artworksApi = {
       ipcRenderer.on("menu:action", listener);
       return () => ipcRenderer.off("menu:action", listener);
     },
+  },
+
+  /** Settings — persistent user preferences (backed by a JSON store). */
+  settings: {
+    get: (): Promise<{ preferences: Partial<Record<PreferenceKey, string>> }> =>
+      ipcRenderer.invoke("settings:get"),
+    set: (
+      key: PreferenceKey,
+      value: string | undefined,
+    ): Promise<{ preferences: Partial<Record<PreferenceKey, string>> }> =>
+      ipcRenderer.invoke("settings:set", key, value),
+    reset: (): Promise<{ preferences: Partial<Record<PreferenceKey, string>> }> =>
+      ipcRenderer.invoke("settings:reset"),
   },
 };
 

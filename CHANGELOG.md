@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Settings.** A persisted preferences store plus a preferences UI. A modal
+  settings panel (opened from the command palette) exposes a theme picker
+  (reusing the Theme Engine, so changes apply instantly), a read-only studio
+  home location, and a default-production selector that sets the active
+  production. Preferences persist to `settings/preferences.json` in the
+  studio home — the same convention as the theme file — and survive
+  restarts; a reset-to-defaults action clears them. Also wires the
+  long-stubbed `studio.status()` (home path + init marker), shared with the
+  `aw` CLI.
+
 - **Desktop window.** Promoted the application window from "opens a branded
   window" to a production-grade frameless window: a custom, draggable title
   bar with platform-aware window controls (minimize/maximize/restore/close),
