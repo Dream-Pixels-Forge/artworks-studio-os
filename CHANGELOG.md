@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Desktop window.** Promoted the application window from "opens a branded
+  window" to a production-grade frameless window: a custom, draggable title
+  bar with platform-aware window controls (minimize/maximize/restore/close),
+  a full application menu bar (File, Edit, View, Window, Help) with keyboard
+  accelerators, window-state persistence across restarts, multi-window
+  groundwork (a registry with role tagging and a dynamic Window-menu list),
+  and graceful shutdown that flushes pending state before quit. Window
+  geometry is restored from `config/window-state.json` in the studio home
+  and clamped to current displays so a window saved on a now-unplugged
+  monitor re-centers on the primary instead of rendering off-screen.
+- **Window + menu IPC surfaces.** New `window.artworks.window` and
+  `window.artworks.menu` preload APIs drive the title bar and react to app
+  menu actions; `window:maximized-changed` pushes keep the title-bar icon in
+  sync. Cross-process DTOs live in `src/shared/window/`.
+
+### Changed
+
+- The renderer shell is now a column (title bar above the explorer/main row)
+  to host the custom chrome.
+
 ## [0.1.0] - 2026-06-29 — Phase 0 (Foundation)
 
 ### Added

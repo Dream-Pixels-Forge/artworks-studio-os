@@ -11,6 +11,9 @@ import { contextBridge, ipcRenderer } from "electron";
 type ThemeMode = "studio-dark" | "studio-light" | "system";
 type ResolvedTheme = "studio-dark" | "studio-light";
 
+/** Menu actions the renderer can react to (mirrors src/shared/window). */
+type MenuAction = "new-production" | "open-production";
+
 const artworksApi = {
   /** Build metadata, for the About/version UI. */
   version: "0.1.0",
@@ -51,6 +54,35 @@ const artworksApi = {
       ipcRenderer.invoke("explorer:expand", path),
     manifest: (name: string) =>
       ipcRenderer.invoke("explorer:manifest", name),
+  },
+
+  /** Window controls — the custom title bar drives these. */
+  window: {
+    minimize: (): void => {
+      ipcRenderer.send("window:minimize");
+    },
+    toggleMaximize: (): void => {
+      ipcRenderer.send("window:maximize-toggle");
+    },
+    close: (): void => {
+      ipcRenderer.send("window:close");
+    },
+    isMaximized: (): Promise<boolean> =>
+      ipcRenderer.invoke("window:is-maximized"),
+    onMaximizedChanged: (cb: (isMaximized: boolean) => void): (() => void) => {
+      const listener = (_event: unknown, isMaximized: boolean): void => cb(isMaximized);
+      ipcRenderer.on("window:maximized-changed", listener);
+      return () => ipcRenderer.off("window:maximized-changed", listener);
+    },
+  },
+
+  /** App-menu actions — the menu forwards studio actions here. */
+  menu: {
+    onAction: (cb: (action: MenuAction) => void): (() => void) => {
+      const listener = (_event: unknown, action: MenuAction): void => cb(action);
+      ipcRenderer.on("menu:action", listener);
+      return () => ipcRenderer.off("menu:action", listener);
+    },
   },
 };
 

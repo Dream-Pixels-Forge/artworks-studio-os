@@ -1,13 +1,15 @@
 /**
  * Electron main process entry.
  *
- * Owns app lifecycle: creates the studio window and tears it down cleanly.
- * Business logic lives in service modules; this file wires them together.
+ * Owns app lifecycle: starts services, opens the studio window, and tears
+ * everything down cleanly. Business logic lives in service modules; this
+ * file wires them together.
  */
 import { app, BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { createWindow } from "@main/app/window.js";
+import { WindowManager } from "@main/app/window-manager.js";
+import { registerWindowIpc } from "@main/app/window-ipc.js";
 import { config } from "@main/core/config.js";
 import { container, token } from "@main/core/service-container.js";
 import { MIGRATIONS } from "@main/database/migrations.js";
@@ -24,8 +26,11 @@ export const DatabaseToken = token<StudioDatabase>("database");
 const BUILTIN_PLUGINS_DIR = join(__dirname, "../../../plugins");
 
 const themeService = new ThemeService();
+const windowManager = new WindowManager();
 let database: StudioDatabase | undefined;
 let pluginRuntime: PluginRuntime | undefined;
+/** True once before-quit has begun its async teardown. */
+let isQuitting = false;
 
 // Single-instance guard: focus the existing window if one is already running.
 const gotLock = app.requestSingleInstanceLock();
@@ -34,10 +39,8 @@ if (!gotLock) {
 }
 
 app.on("second-instance", () => {
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (window.isMinimized()) window.restore();
-    window.focus();
-  }
+  // Focus the main window when a second launch is attempted.
+  windowManager.createMain();
 });
 
 app.whenReady().then(async () => {
@@ -59,22 +62,40 @@ app.whenReady().then(async () => {
   // Register the project explorer IPC handlers.
   registerExplorerHandlers();
 
-  createWindow({ indexHtmlPath: getIndexHtml() });
+  // Window controls (title bar) + the main window with persisted state.
+  registerWindowIpc();
+  await windowManager.start({ indexHtmlPath: getIndexHtml() });
 
   app.on("activate", () => {
+    // macOS: re-open the main window when there are none left.
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow({ indexHtmlPath: getIndexHtml() });
+      void windowManager.createMain();
     }
   });
 });
 
-app.on("before-quit", async (event) => {
-  if (pluginRuntime) {
-    event.preventDefault();
-    await pluginRuntime.stop();
-    pluginRuntime = undefined;
-    app.quit();
-  }
+/**
+ * Graceful shutdown: flush window state and stop plugins before quitting.
+ * `before-quit` fires once; we prevent the default, run async teardown,
+ * then quit. A guard keeps a second fire (e.g. from window-all-closed)
+ * from re-entering teardown.
+ */
+app.on("before-quit", (event) => {
+  if (isQuitting) return;
+  isQuitting = true;
+  event.preventDefault();
+
+  void (async () => {
+    try {
+      await windowManager.shutdown();
+      if (pluginRuntime) {
+        await pluginRuntime.stop();
+        pluginRuntime = undefined;
+      }
+    } finally {
+      app.quit();
+    }
+  })();
 });
 
 app.on("window-all-closed", () => {

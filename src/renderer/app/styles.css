@@ -33,18 +33,91 @@ body {
 .studio-shell {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   height: 100%;
-  gap: var(--space-6);
-  text-align: center;
+  text-align: left;
 }
 
 .studio-shell--workspace {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.studio-shell__body {
+  flex: 1;
+  display: flex;
   flex-direction: row;
   align-items: stretch;
   justify-content: flex-start;
-  text-align: left;
+  min-height: 0; /* allow the explorer/scroll regions to shrink */
+}
+
+/* Title bar — custom chrome for the frameless window */
+.title-bar {
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border);
+  -webkit-app-region: drag; /* the whole bar moves the window */
+  user-select: none;
+}
+
+.title-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+}
+
+/* macOS: reserve leading space so the brand clears the native traffic lights. */
+.title-bar--mac .title-bar__brand {
+  padding-left: 80px;
+}
+
+.title-bar__mark {
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+}
+
+.title-bar__title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+.title-bar__spacer {
+  flex: 1;
+}
+
+.title-bar__controls {
+  display: flex;
+  align-items: center;
+  -webkit-app-region: no-drag; /* buttons capture clicks, not drags */
+}
+
+.title-bar__btn {
+  width: 46px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.title-bar__btn:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.title-bar__btn--close:hover {
+  background: var(--color-danger);
+  color: var(--color-bg);
 }
 
 .studio-shell__main {
