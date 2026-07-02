@@ -40,6 +40,8 @@ Timeline Engine
 
 Studio Platform
 
+Node-Based Production
+
 Current Design Principles
 
 Story First
@@ -168,10 +170,14 @@ Phase 14 (Node-Based Production) — complete.
 NodeWorkflowRepository with CRUD and graph operations. 8 IPC handlers
 for workflow lifecycle and graph management. Preload bridge with
 nodeWorkflow API. Node Production Panel with React Flow canvas-based
-node editor, workflow creation modal, status management, and graph
-persistence. Command palette commands for workflow creation, listing,
-stats, and panel opening. Schema migration v6 with node_workflows table
-and JSON nodes/edges/viewport storage.
+node editor, 17-item node palette (5 categories), drag-and-drop,
+custom ProductionNode with category-based color coding, right-click
+context menu with edit/delete, double-click edge label editing, node
+property panel sidebar with live preview, keyboard shortcuts (Delete/
+Backspace, Escape), auto-save with 2s debounce, Background/Controls/
+MiniMap. Command palette commands for workflow creation, listing, stats,
+and panel opening. Schema migration v6 with node_workflows table and
+JSON nodes/edges/viewport storage.
 
 Upcoming Work
 
