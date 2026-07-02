@@ -428,6 +428,24 @@ const artworksApi = {
     },
   },
 
+  /** Production Intelligence — cross-cutting analytics dashboard. */
+  intelligence: {
+    health: () =>
+      ipcRenderer.invoke("intelligence:health"),
+    activity: (since?: string) =>
+      ipcRenderer.invoke("intelligence:activity", since),
+    timeline: (projectUuid?: string) =>
+      ipcRenderer.invoke("intelligence:timeline", projectUuid),
+    entities: () =>
+      ipcRenderer.invoke("intelligence:entities"),
+    "ai-usage": () =>
+      ipcRenderer.invoke("intelligence:ai-usage"),
+    team: () =>
+      ipcRenderer.invoke("intelligence:team"),
+    summary: () =>
+      ipcRenderer.invoke("intelligence:summary"),
+  },
+
   /** Plugin management — install, enable/disable, uninstall, execute commands. */
   plugin: {
     list: () =>

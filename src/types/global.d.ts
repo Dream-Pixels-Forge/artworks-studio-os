@@ -248,6 +248,16 @@ interface ArtworksApi {
     stats: () => Promise<unknown>;
   };
 
+  intelligence: {
+    health: () => Promise<unknown>;
+    activity: (since?: string) => Promise<unknown>;
+    timeline: (projectUuid?: string) => Promise<unknown>;
+    entities: () => Promise<unknown>;
+    "ai-usage": () => Promise<unknown>;
+    team: () => Promise<unknown>;
+    summary: () => Promise<unknown>;
+  };
+
   enterprise: {
     team: {
       list: () => Promise<unknown>;

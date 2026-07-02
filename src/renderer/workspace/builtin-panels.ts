@@ -50,6 +50,9 @@ import "../panels/marketplace/marketplace-panel.js";
 // Phase 16 panels
 import "../panels/enterprise/enterprise-panel.js";
 
+// Phase 17 panels
+import "../panels/production-intelligence/production-intelligence-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",

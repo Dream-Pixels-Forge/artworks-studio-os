@@ -20,6 +20,7 @@ import { registerProductionIpc } from "@main/services/production-ipc.js";
 import { registerPluginIpc } from "@main/services/plugin-ipc.js";
 import { registerMarketplaceIpc } from "@main/services/marketplace-ipc.js";
 import { registerEnterpriseIpc } from "@main/services/enterprise-ipc.js";
+import { registerIntelligenceIpc } from "@main/services/intelligence-ipc.js";
 import { registerExplorerHandlers } from "@main/integrations/production-explorer/ipc-handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -86,6 +87,9 @@ app.whenReady().then(async () => {
 
   // Register enterprise IPC (teams, roles, permissions, audit log, licenses).
   registerEnterpriseIpc(database);
+
+  // Register production intelligence IPC (cross-cutting analytics).
+  registerIntelligenceIpc(database);
 
   // Window controls (title bar) + the main window with persisted state.
   registerWindowIpc();

@@ -360,6 +360,60 @@ export function registerBuiltinCommands(): void {
     },
   });
 
+  // --- Production Intelligence commands (Phase 17) ---
+  commandRegistry.register({
+    id: "intelligence:open-panel",
+    title: "Open Production Intelligence",
+    category: "Intelligence",
+    keywords: ["intelligence", "analytics", "dashboard", "stats", "insights"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "production-intelligence" } }));
+    },
+  });
+
+  commandRegistry.register({
+    id: "intelligence:show-summary",
+    title: "Show Production Summary",
+    category: "Intelligence",
+    keywords: ["summary", "overview", "analytics"],
+    run: async () => {
+      const s = await window.artworks.intelligence.summary() as {
+        health: { entities: number; projects: number; activeTasks: number; overdueTimelines: number };
+        ai: { totalTasks: number; completionRate: number };
+        team: { totalUsers: number; activeUsers: number };
+      };
+      window.alert(
+        `Production Summary:\n` +
+        `Entities: ${s.health.entities} | Projects: ${s.health.projects}\n` +
+        `Active Tasks: ${s.health.activeTasks} | Overdue: ${s.health.overdueTimelines}\n` +
+        `AI Tasks: ${s.ai.totalTasks} (${s.ai.completionRate}% completion)\n` +
+        `Team: ${s.team.activeUsers}/${s.team.totalUsers} active`
+      );
+    },
+  });
+
+  commandRegistry.register({
+    id: "intelligence:show-health",
+    title: "Show Production Health",
+    category: "Intelligence",
+    keywords: ["health", "status", "overview"],
+    run: async () => {
+      const h = await window.artworks.intelligence.health() as {
+        entities: number; projects: number; assets: number; documents: number;
+        activeWorkflows: number; pendingApprovals: number; agents: number;
+        activeTasks: number; overdueTimelines: number;
+      };
+      window.alert(
+        `Production Health:\n` +
+        `Entities: ${h.entities} | Projects: ${h.projects}\n` +
+        `Assets: ${h.assets} | Documents: ${h.documents}\n` +
+        `Workflows: ${h.activeWorkflows} | Approvals: ${h.pendingApprovals}\n` +
+        `Agents: ${h.agents} | Tasks: ${h.activeTasks}\n` +
+        `Overdue Timelines: ${h.overdueTimelines}`
+      );
+    },
+  });
+
   // --- Enterprise commands (Phase 16) ---
   commandRegistry.register({
     id: "enterprise:open-panel",

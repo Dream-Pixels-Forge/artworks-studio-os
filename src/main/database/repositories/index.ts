@@ -50,3 +50,13 @@ export { AuditRepository } from "./audit-repository.js";
 export type { AuditEntry, AuditEntryWithUser } from "./audit-repository.js";
 export { LicenseRepository } from "./license-repository.js";
 export type { License, LicenseWithFeatures } from "./license-repository.js";
+export { ProductionIntelligenceRepository } from "./production-intelligence-repository.js";
+export type {
+  ProductionHealth,
+  ActivityMetrics,
+  TimelineAnalytics,
+  EntityAnalytics,
+  AiUsageMetrics,
+  TeamProductivity,
+  ProductionSummary,
+} from "./production-intelligence-repository.js";
