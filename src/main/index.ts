@@ -76,8 +76,8 @@ app.whenReady().then(async () => {
   // Register production IPC (project, asset, document, search).
   registerProductionIpc(database);
 
-  // Register plugin IPC (install, enable/disable, uninstall).
-  registerPluginIpc(database);
+  // Register plugin IPC (install, enable/disable, uninstall, executeCommand).
+  registerPluginIpc(database, pluginRuntime);
 
   // Window controls (title bar) + the main window with persisted state.
   registerWindowIpc();

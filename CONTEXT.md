@@ -115,9 +115,16 @@ transaction safety in WorkflowRepository and ConversationRepository,
 FTS5 query escaping, Knowledge Graph type coverage, dashboard entity
 count, IPC input validation, and error logging.
 
-Upcoming Work
+Phase 9 (Plugin Platform) — complete.
 
-Phase 9 — Plugin Platform
+Plugin repository with DB-backed install/uninstall, PluginRuntime
+with lifecycle management, SDK services (Project, Asset, Graph, Event,
+Notification, AI, File, Media, Prompt), IPC handlers for plugin CRUD,
+preload bridge, Plugin Manager panel with detail view and file picker,
+command palette bridging for plugin commands, and runtime enable/disable
+wiring through DB.
+
+Upcoming Work
 
 Phase 10 — Production Timeline
 
