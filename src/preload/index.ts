@@ -406,6 +406,26 @@ const artworksApi = {
       stats: (agentId: string) =>
         ipcRenderer.invoke("production:agentMessage:stats", agentId),
     },
+
+    /** Node Workflows — visual production workflows with React Flow canvas. */
+    nodeWorkflow: {
+      list: () =>
+        ipcRenderer.invoke("production:nodeWorkflow:list"),
+      create: (input: { name: string; description?: string; nodes?: string; edges?: string; viewport?: string }) =>
+        ipcRenderer.invoke("production:nodeWorkflow:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:nodeWorkflow:get", uuid),
+      update: (uuid: string, input: { name?: string; description?: string; status?: string; nodes?: string; edges?: string; viewport?: string }) =>
+        ipcRenderer.invoke("production:nodeWorkflow:update", uuid, input),
+      updateGraph: (uuid: string, nodes: string, edges: string, viewport?: string) =>
+        ipcRenderer.invoke("production:nodeWorkflow:updateGraph", uuid, nodes, edges, viewport),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:nodeWorkflow:delete", uuid),
+      listByStatus: (status: "draft" | "active" | "archived") =>
+        ipcRenderer.invoke("production:nodeWorkflow:listByStatus", status),
+      stats: () =>
+        ipcRenderer.invoke("production:nodeWorkflow:stats"),
+    },
   },
 
   /** Plugin management — install, enable/disable, uninstall, execute commands. */

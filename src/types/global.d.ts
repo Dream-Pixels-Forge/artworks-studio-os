@@ -209,6 +209,17 @@ interface ArtworksApi {
       deleteByTask: (taskId: string) => Promise<unknown>;
       stats: (agentId: string) => Promise<unknown>;
     };
+
+    nodeWorkflow: {
+      list: () => Promise<unknown>;
+      create: (input: { name: string; description?: string; nodes?: string; edges?: string; viewport?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      update: (uuid: string, input: { name?: string; description?: string; status?: string; nodes?: string; edges?: string; viewport?: string }) => Promise<unknown>;
+      updateGraph: (uuid: string, nodes: string, edges: string, viewport?: string) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      listByStatus: (status: "draft" | "active" | "archived") => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
   };
 
   plugin: {

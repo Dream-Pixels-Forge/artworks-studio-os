@@ -163,9 +163,17 @@ task management, and message history. Command palette commands for
 agent creation, listing, and stats. Schema migration v5 with ai_agents,
 agent_tasks, and agent_messages tables.
 
-Upcoming Work
+Phase 14 (Node-Based Production) — complete.
 
-Phase 14 — Node-Based Production
+NodeWorkflowRepository with CRUD and graph operations. 8 IPC handlers
+for workflow lifecycle and graph management. Preload bridge with
+nodeWorkflow API. Node Production Panel with React Flow canvas-based
+node editor, workflow creation modal, status management, and graph
+persistence. Command palette commands for workflow creation, listing,
+stats, and panel opening. Schema migration v6 with node_workflows table
+and JSON nodes/edges/viewport storage.
+
+Upcoming Work
 
 Phase 15 — Marketplace
 

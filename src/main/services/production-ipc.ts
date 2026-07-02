@@ -28,6 +28,7 @@ import {
   AgentRepository,
   AgentTaskRepository,
   AgentMessageRepository,
+  NodeWorkflowRepository,
   type CreateProjectInput,
   type CreateAssetInput,
   type CreateDocumentInput,
@@ -53,6 +54,7 @@ import {
   type CreateAgentInput,
   type CreateTaskInput,
   type CreateMessageInput,
+  type CreateNodeWorkflowInput,
 } from "@main/database/repositories/index.js";
 import type {
   ProjectDto,
@@ -88,6 +90,7 @@ let reviewRepo: ReviewRepository;
 let agentRepo: AgentRepository;
 let agentTaskRepo: AgentTaskRepository;
 let agentMsgRepo: AgentMessageRepository;
+let nodeWorkflowRepo: NodeWorkflowRepository;
 
 /** Register all production IPC handlers. Call once on app startup. */
 export function registerProductionIpc(db: StudioDatabase): void {
@@ -110,6 +113,7 @@ export function registerProductionIpc(db: StudioDatabase): void {
   agentRepo = new AgentRepository(db);
   agentTaskRepo = new AgentTaskRepository(db);
   agentMsgRepo = new AgentMessageRepository(db);
+  nodeWorkflowRepo = new NodeWorkflowRepository(db);
 
   // --- Projects ---
   ipcMain.handle("production:project:list", () => projectRepo.list() as ProjectDto[]);
@@ -475,4 +479,20 @@ export function registerProductionIpc(db: StudioDatabase): void {
     count: agentMsgRepo.countByAgent(agentId),
     tokens: agentMsgRepo.tokensByAgent(agentId),
   }));
+
+  // --- Node Workflows (Phase 14) ---
+  ipcMain.handle("production:nodeWorkflow:list", () => nodeWorkflowRepo.list());
+  ipcMain.handle("production:nodeWorkflow:create", (_e, input: CreateNodeWorkflowInput) => {
+    if (!input.name?.trim()) throw new Error("Workflow name is required");
+    return nodeWorkflowRepo.create(input);
+  });
+  ipcMain.handle("production:nodeWorkflow:get", (_e, uuid: string) => nodeWorkflowRepo.findByUuid(uuid));
+  ipcMain.handle("production:nodeWorkflow:update", (_e, uuid: string, input: Partial<CreateNodeWorkflowInput> & { status?: string }) =>
+    nodeWorkflowRepo.update(uuid, input));
+  ipcMain.handle("production:nodeWorkflow:updateGraph", (_e, uuid: string, nodes: string, edges: string, viewport?: string) =>
+    nodeWorkflowRepo.updateGraph(uuid, nodes, edges, viewport));
+  ipcMain.handle("production:nodeWorkflow:delete", (_e, uuid: string) => nodeWorkflowRepo.delete(uuid));
+  ipcMain.handle("production:nodeWorkflow:listByStatus", (_e, status: "draft" | "active" | "archived") =>
+    nodeWorkflowRepo.listByStatus(status));
+  ipcMain.handle("production:nodeWorkflow:stats", () => nodeWorkflowRepo.stats());
 }

@@ -41,6 +41,9 @@ import "../panels/studio/studio-panel.js";
 // Phase 13 panels
 import "../panels/agent-teams/agent-teams-panel.js";
 
+// Phase 14 panels
+import "../panels/node-production/node-production-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",

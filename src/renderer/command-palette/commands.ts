@@ -252,6 +252,63 @@ export function registerBuiltinCommands(): void {
       );
     },
   });
+
+  // --- Node Production commands (Phase 14) ---
+  commandRegistry.register({
+    id: "node-workflow:create",
+    title: "Create Node Workflow",
+    category: "Node Production",
+    keywords: ["node", "workflow", "create", "pipeline"],
+    run: async () => {
+      const name = window.prompt("Workflow name:");
+      if (!name?.trim()) return;
+      await window.artworks.production.nodeWorkflow.create({ name: name.trim() });
+      console.log(`Created workflow: ${name}`);
+    },
+  });
+
+  commandRegistry.register({
+    id: "node-workflow:list",
+    title: "List Node Workflows",
+    category: "Node Production",
+    keywords: ["node", "workflow", "list"],
+    run: async () => {
+      const workflows = await window.artworks.production.nodeWorkflow.list() as Array<{
+        uuid: string; name: string; status: string; nodeCount: number;
+      }>;
+      const list = workflows.map((w) => `${w.name} (${w.status}) - ${w.nodeCount} nodes`).join("\n");
+      console.log(`Node Workflows:\n${list || "None"}`);
+    },
+  });
+
+  commandRegistry.register({
+    id: "node-workflow:stats",
+    title: "Node Workflow Stats",
+    category: "Node Production",
+    keywords: ["node", "workflow", "stats"],
+    run: async () => {
+      const stats = await window.artworks.production.nodeWorkflow.stats() as {
+        total: number; draft: number; active: number; archived: number;
+      };
+      console.log(
+        `Node Workflows:\n` +
+        `Total: ${stats.total}\n` +
+        `Draft: ${stats.draft}\n` +
+        `Active: ${stats.active}\n` +
+        `Archived: ${stats.archived}`
+      );
+    },
+  });
+
+  commandRegistry.register({
+    id: "node-workflow:open-panel",
+    title: "Open Node Production Panel",
+    category: "Node Production",
+    keywords: ["node", "workflow", "panel", "canvas"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "node-production" } }));
+    },
+  });
 }
 
 /** Register commands from enabled plugins into the command palette. */

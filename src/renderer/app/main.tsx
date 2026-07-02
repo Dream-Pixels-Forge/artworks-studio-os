@@ -14,6 +14,7 @@ import "../workspace/workspace.css";
 import "../panels/panels.css";
 import "../panels/phase3-panels.css";
 import "../panels/phase4-8-panels.css";
+import "@xyflow/react/dist/style.css";
 
 loadTokens(); // synchronous default; ThemeProvider corrects once IPC resolves
 

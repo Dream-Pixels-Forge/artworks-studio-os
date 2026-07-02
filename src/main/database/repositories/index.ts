@@ -38,3 +38,5 @@ export { AgentTaskRepository } from "./agent-task-repository.js";
 export type { AgentTask, CreateTaskInput } from "./agent-task-repository.js";
 export { AgentMessageRepository } from "./agent-message-repository.js";
 export type { AgentMessage, CreateMessageInput } from "./agent-message-repository.js";
+export { NodeWorkflowRepository } from "./node-workflow-repository.js";
+export type { NodeWorkflow, CreateNodeWorkflowInput, NodeWorkflowMeta } from "./node-workflow-repository.js";
