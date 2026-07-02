@@ -17,6 +17,7 @@ import { StudioDatabase } from "@main/database/db.js";
 import { PluginRuntime } from "@main/plugins/index.js";
 import { ThemeService, registerThemeIpc, SettingsService, registerSettingsIpc, registerStudioStatusIpc } from "@main/services/index.js";
 import { registerProductionIpc } from "@main/services/production-ipc.js";
+import { registerPluginIpc } from "@main/services/plugin-ipc.js";
 import { registerExplorerHandlers } from "@main/integrations/production-explorer/ipc-handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -51,10 +52,13 @@ app.whenReady().then(async () => {
   container.register(DatabaseToken, () => database!);
 
   // Load and activate plugins before the window opens.
-  pluginRuntime = new PluginRuntime({
-    builtinDir: BUILTIN_PLUGINS_DIR,
-    userDir: join(config.home, "plugins"),
-  });
+  pluginRuntime = new PluginRuntime(
+    {
+      builtinDir: BUILTIN_PLUGINS_DIR,
+      userDir: join(config.home, "plugins"),
+    },
+    database,
+  );
   await pluginRuntime.start();
 
   // Initialize theming (persistence + OS bridging).
@@ -71,6 +75,9 @@ app.whenReady().then(async () => {
 
   // Register production IPC (project, asset, document, search).
   registerProductionIpc(database);
+
+  // Register plugin IPC (install, enable/disable, uninstall).
+  registerPluginIpc(database);
 
   // Window controls (title bar) + the main window with persisted state.
   registerWindowIpc();

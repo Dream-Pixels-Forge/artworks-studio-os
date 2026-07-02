@@ -13,6 +13,7 @@ import {
   DocumentRepository,
   EntityRepository,
   GraphRepository,
+  PluginRepository,
   ProjectRepository,
 } from "./index.js";
 
@@ -159,5 +160,65 @@ describe("GraphRepository", () => {
     graph.connect(a.uuid, b.uuid, "test-edge");
     graph.connect(a.uuid, b.uuid, "test-edge"); // ignored
     expect(graph.relationships(a.uuid).filter((r) => r.type === "test-edge")).toHaveLength(1);
+  });
+});
+
+describe("PluginRepository", () => {
+  const repo = () => new PluginRepository(db);
+
+  const testManifest = {
+    id: "test-plugin",
+    name: "Test Plugin",
+    version: "1.0.0",
+    author: "Test Author",
+    category: "ui" as const,
+    description: "A test plugin",
+    sdkVersion: "0.1.0",
+    permissions: [] as never[],
+    commands: [],
+  };
+
+  it("installs a plugin and records it enabled by default", () => {
+    const record = repo().install({ manifest: testManifest });
+    expect(record.enabled).toBe(true);
+    expect(record.manifest.id).toBe("test-plugin");
+
+    const found = repo().record(record.uuid);
+    expect(found).toBeDefined();
+    expect(found?.manifest.name).toBe("Test Plugin");
+  });
+
+  it("lists installed plugins", () => {
+    const list = repo().list();
+    expect(list.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("disables and re-enables a plugin", () => {
+    const record = repo().install({ manifest: testManifest });
+    repo().setEnabled(record.uuid, false);
+    const afterDisable = repo().record(record.uuid);
+    expect(afterDisable?.enabled).toBe(false);
+
+    repo().setEnabled(record.uuid, true);
+    const afterEnable = repo().record(record.uuid);
+    expect(afterEnable?.enabled).toBe(true);
+  });
+
+  it("counts installed plugins", () => {
+    const count = repo().count();
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  it("uninstalls a plugin and cascades to entities", () => {
+    const record = repo().install({
+      manifest: {
+        ...testManifest,
+        id: "to-delete",
+        name: "To Delete",
+      },
+    });
+    repo().uninstall(record.uuid);
+    expect(repo().record(record.uuid)).toBeUndefined();
+    expect(repo().count()).toBeGreaterThanOrEqual(1);
   });
 });
