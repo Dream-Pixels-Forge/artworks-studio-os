@@ -18,6 +18,7 @@ import { PluginRuntime } from "@main/plugins/index.js";
 import { ThemeService, registerThemeIpc, SettingsService, registerSettingsIpc, registerStudioStatusIpc } from "@main/services/index.js";
 import { registerProductionIpc } from "@main/services/production-ipc.js";
 import { registerPluginIpc } from "@main/services/plugin-ipc.js";
+import { registerMarketplaceIpc } from "@main/services/marketplace-ipc.js";
 import { registerExplorerHandlers } from "@main/integrations/production-explorer/ipc-handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -78,6 +79,9 @@ app.whenReady().then(async () => {
 
   // Register plugin IPC (install, enable/disable, uninstall, executeCommand).
   registerPluginIpc(database, pluginRuntime);
+
+  // Register marketplace IPC (browse, search, install, rate, publish).
+  registerMarketplaceIpc(database);
 
   // Window controls (title bar) + the main window with persisted state.
   registerWindowIpc();

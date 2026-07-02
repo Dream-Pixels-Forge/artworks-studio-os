@@ -44,6 +44,9 @@ import "../panels/agent-teams/agent-teams-panel.js";
 // Phase 14 panels
 import "../panels/node-production/node-production-panel.js";
 
+// Phase 15 panels
+import "../panels/marketplace/marketplace-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",

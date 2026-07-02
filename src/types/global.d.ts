@@ -233,6 +233,20 @@ interface ArtworksApi {
     getManifest: (uuid: string) => Promise<unknown>;
     executeCommand: (pluginId: string, commandId: string) => Promise<unknown>;
   };
+
+  marketplace: {
+    list: (filter?: Record<string, unknown>) => Promise<unknown>;
+    featured: (limit?: number) => Promise<unknown>;
+    recent: (limit?: number) => Promise<unknown>;
+    getByUuid: (uuid: string) => Promise<unknown>;
+    getBySlug: (slug: string) => Promise<unknown>;
+    publish: (input: Record<string, unknown>) => Promise<unknown>;
+    install: (uuid: string, version: string) => Promise<unknown>;
+    uninstall: (uuid: string) => Promise<unknown>;
+    rate: (uuid: string, input: { rating: number }) => Promise<unknown>;
+    delete: (uuid: string) => Promise<unknown>;
+    stats: () => Promise<unknown>;
+  };
 }
 
 declare global {
