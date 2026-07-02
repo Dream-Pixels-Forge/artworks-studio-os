@@ -23,6 +23,7 @@ import {
   type OnNodesChange,
   type OnEdgesChange,
   type ReactFlowInstance,
+  type OnSelectionChangeFunc,
 } from "@xyflow/react";
 import { panelRegistry } from "../../workspace/registry.js";
 
@@ -74,9 +75,440 @@ const NODE_COLORS: Record<NodeCategory, { bg: string; border: string; header: st
   publishing: { bg: "#1a1a2e", border: "#00b4d8", header: "#00b4d8" },
 };
 
+// ─── Context Menu Component ─────────────────────────────────────────────────
+
+interface ContextMenuProps {
+  x: number;
+  y: number;
+  onClose: () => void;
+  onDeleteNode: (id: string) => void;
+  onEditNode: (id: string) => void;
+  nodeId: string;
+}
+
+function ContextMenu({ x, y, onClose, onDeleteNode, onEditNode, nodeId }: ContextMenuProps) {
+  useEffect(() => {
+    const handleClick = () => onClose();
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [onClose]);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: x,
+        top: y,
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: 6,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+        zIndex: 2000,
+        minWidth: 140,
+        padding: "4px 0",
+      }}
+    >
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onEditNode(nodeId);
+          onClose();
+        }}
+        style={{
+          display: "block",
+          width: "100%",
+          padding: "8px 12px",
+          textAlign: "left",
+          border: "none",
+          background: "transparent",
+          color: "var(--text-primary)",
+          cursor: "pointer",
+          fontSize: 12,
+        }}
+        onMouseEnter={(e) => {
+          (e.target as HTMLElement).style.background = "var(--surface-hover)";
+        }}
+        onMouseLeave={(e) => {
+          (e.target as HTMLElement).style.background = "transparent";
+        }}
+      >
+        Edit Node
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDeleteNode(nodeId);
+          onClose();
+        }}
+        style={{
+          display: "block",
+          width: "100%",
+          padding: "8px 12px",
+          textAlign: "left",
+          border: "none",
+          background: "transparent",
+          color: "var(--danger, #e53170)",
+          cursor: "pointer",
+          fontSize: 12,
+        }}
+        onMouseEnter={(e) => {
+          (e.target as HTMLElement).style.background = "var(--surface-hover)";
+        }}
+        onMouseLeave={(e) => {
+          (e.target as HTMLElement).style.background = "transparent";
+        }}
+      >
+        Delete Node
+      </button>
+    </div>
+  );
+}
+
+// ─── Edge Label Editor Component ────────────────────────────────────────────
+
+interface EdgeLabelEditorProps {
+  edge: Edge;
+  onUpdateLabel: (edgeId: string, label: string) => void;
+  onClose: () => void;
+}
+
+function EdgeLabelEditor({ edge, onUpdateLabel, onClose }: EdgeLabelEditorProps) {
+  const [label, setLabel] = useState((edge.label as string) ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const handleSave = () => {
+    onUpdateLabel(edge.id, label);
+    onClose();
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%, -50%)",
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: 8,
+        padding: 16,
+        boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+        zIndex: 2000,
+        width: 280,
+      }}
+    >
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Edit Edge Label</div>
+      <input
+        ref={inputRef}
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        placeholder="Enter label..."
+        style={{
+          width: "100%",
+          padding: "8px 12px",
+          border: "1px solid var(--border)",
+          borderRadius: 4,
+          fontSize: 13,
+          boxSizing: "border-box",
+          background: "var(--surface-hover)",
+          color: "var(--text-primary)",
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSave();
+          if (e.key === "Escape") onClose();
+        }}
+      />
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+        <button
+          onClick={onClose}
+          style={{
+            padding: "6px 12px",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          style={{
+            padding: "6px 12px",
+            background: "var(--accent)",
+            color: "var(--text-primary)",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Node Property Panel Component ──────────────────────────────────────────
+
+interface NodePropertyPanelProps {
+  node: Node<ProductionNodeData>;
+  onUpdate: (nodeId: string, data: Partial<ProductionNodeData>) => void;
+  onClose: () => void;
+  onDelete: (nodeId: string) => void;
+}
+
+function NodePropertyPanel({ node, onUpdate, onClose, onDelete }: NodePropertyPanelProps) {
+  const [label, setLabel] = useState(node.data.label);
+  const [description, setDescription] = useState(node.data.description ?? "");
+  const [status, setStatus] = useState(node.data.status ?? "");
+  const [category, setCategory] = useState<NodeCategory>(node.data.category);
+
+  const handleSave = () => {
+    onUpdate(node.id, { label, description, status, category });
+  };
+
+  const colors = NODE_COLORS[category];
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 280,
+        background: "var(--surface)",
+        borderLeft: "1px solid var(--border)",
+        zIndex: 100,
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "-4px 0 16px rgba(0,0,0,0.2)",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: "12px 16px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 600 }}>Edit Node</div>
+        <button
+          onClick={onClose}
+          style={{
+            border: "none",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 18,
+            padding: "0 4px",
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", fontSize: 11, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
+            Category
+          </label>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {(Object.keys(NODE_COLORS) as NodeCategory[]).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: 4,
+                  border: `2px solid ${category === cat ? NODE_COLORS[cat].border : "var(--border)"}`,
+                  background: category === cat ? NODE_COLORS[cat].bg : "transparent",
+                  color: category === cat ? NODE_COLORS[cat].border : "var(--text-secondary)",
+                  cursor: "pointer",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", fontSize: 11, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
+            Label
+          </label>
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              fontSize: 13,
+              boxSizing: "border-box",
+              background: "var(--surface-hover)",
+              color: "var(--text-primary)",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", fontSize: 11, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
+            Description
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              fontSize: 13,
+              resize: "vertical",
+              boxSizing: "border-box",
+              background: "var(--surface-hover)",
+              color: "var(--text-primary)",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 11, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
+            Status
+          </label>
+          <input
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            placeholder="e.g. pending, ready, done"
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              fontSize: 13,
+              boxSizing: "border-box",
+              background: "var(--surface-hover)",
+              color: "var(--text-primary)",
+            }}
+          />
+        </div>
+
+        {/* Preview */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 11, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
+            Preview
+          </label>
+          <div
+            style={{
+              background: colors.bg,
+              border: `2px solid ${colors.border}`,
+              borderRadius: 8,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                background: colors.header,
+                padding: "6px 12px",
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+                color: "#000",
+              }}
+            >
+              {category}
+            </div>
+            <div style={{ padding: "10px 12px" }}>
+              <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4 }}>{label || "Untitled"}</div>
+              {description && (
+                <div style={{ fontSize: 11, color: "#888", lineHeight: 1.3 }}>{description}</div>
+              )}
+              {status && (
+                <div style={{ fontSize: 10, color: colors.border, marginTop: 6 }}>{status}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: 8 }}>
+        <button
+          onClick={() => onDelete(node.id)}
+          style={{
+            padding: "6px 12px",
+            background: "var(--danger, #e53170)",
+            color: "white",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          Delete
+        </button>
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={onClose}
+          style={{
+            padding: "6px 12px",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          style={{
+            padding: "6px 12px",
+            background: "var(--accent)",
+            color: "var(--text-primary)",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Custom Node Component ──────────────────────────────────────────────────
 
-function ProductionNode({ data, selected }: NodeProps<Node<ProductionNodeData>>) {
+interface ProductionNodeExtraProps {
+  onContextMenu: (e: MouseEvent, nodeId: string) => void;
+  onDoubleClick: (nodeId: string) => void;
+}
+
+function ProductionNode({ data, selected, id, onContextMenu, onDoubleClick }: NodeProps<Node<ProductionNodeData>> & ProductionNodeExtraProps) {
   const nodeData = data as ProductionNodeData;
   const colors = NODE_COLORS[nodeData.category] ?? NODE_COLORS.production;
 
@@ -88,7 +520,10 @@ function ProductionNode({ data, selected }: NodeProps<Node<ProductionNodeData>>)
         borderRadius: 8,
         minWidth: 180,
         boxShadow: selected ? `0 0 12px ${colors.border}40` : "0 2px 8px rgba(0,0,0,0.3)",
+        cursor: "context-menu",
       }}
+      onContextMenu={(e) => onContextMenu(e as unknown as MouseEvent, id)}
+      onDoubleClick={() => onDoubleClick(id)}
     >
       {/* Header */}
       <div
@@ -199,6 +634,19 @@ export function NodeProductionPanel() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReturnType<typeof import("@xyflow/react").useReactFlow> | null>(null);
 
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
+
+  // Edge label editing state
+  const [editingEdge, setEditingEdge] = useState<Edge | null>(null);
+
+  // Node property panel state
+  const [editingNode, setEditingNode] = useState<Node<ProductionNodeData> | null>(null);
+
+  // Selected node/edge IDs
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
+
   // Parse nodes and edges from workflow
   const initialNodes: Node<ProductionNodeData>[] = useMemo(() => {
     if (!selectedWorkflow) return [];
@@ -290,6 +738,9 @@ export function NodeProductionPanel() {
     try {
       const wf = await window.artworks.production.nodeWorkflow.get(uuid) as NodeWorkflow;
       setSelectedWorkflow(wf);
+      setEditingNode(null);
+      setEditingEdge(null);
+      setContextMenu(null);
     } catch (err) {
       console.error("Failed to load workflow:", err);
     }
@@ -374,17 +825,109 @@ export function NodeProductionPanel() {
     }
   }, [selectedWorkflow]);
 
+  // ─── Node operations ──────────────────────────────────────────────────────
+
+  const handleDeleteNode = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    if (editingNode?.id === nodeId) setEditingNode(null);
+  }, [setNodes, setEdges, editingNode]);
+
+  const handleEditNode = useCallback((nodeId: string) => {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (node) setEditingNode(node as Node<ProductionNodeData>);
+  }, [nodes]);
+
+  const handleUpdateNode = useCallback((nodeId: string, data: Partial<ProductionNodeData>) => {
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n
+      )
+    );
+    setEditingNode(null);
+  }, [setNodes]);
+
+  // ─── Edge operations ──────────────────────────────────────────────────────
+
+  const handleUpdateEdgeLabel = useCallback((edgeId: string, label: string) => {
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === edgeId ? { ...e, label: label || undefined } : e
+      )
+    );
+  }, [setEdges]);
+
+  // ─── Selection change ─────────────────────────────────────────────────────
+
+  const onSelectionChange: OnSelectionChangeFunc = useCallback(({ nodes: selNodes, edges: selEdges }) => {
+    setSelectedNodeIds(selNodes.map((n) => n.id));
+    setSelectedEdgeIds(selEdges.map((e) => e.id));
+  }, []);
+
   // ─── React Flow handlers ──────────────────────────────────────────────────
 
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => {
-      setEdges((eds) => addEdge({ ...connection, animated: true }, eds));
+      setEdges((eds) => addEdge({ ...connection, animated: true, label: "" }, eds));
     },
     [setEdges],
   );
 
   const onInit: Parameters<typeof ReactFlow>[0]["onInit"] = useCallback((instance: ReactFlowInstance) => {
     setReactFlowInstance(instance);
+  }, []);
+
+  // ─── Keyboard handler ─────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Delete selected nodes
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedNodeIds.length > 0) {
+        // Don't delete if we're in an input field
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
+        
+        e.preventDefault();
+        for (const nodeId of selectedNodeIds) {
+          handleDeleteNode(nodeId);
+        }
+      }
+      // Delete selected edges
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedEdgeIds.length > 0 && selectedNodeIds.length === 0) {
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
+        
+        e.preventDefault();
+        setEdges((eds) => eds.filter((e) => !selectedEdgeIds.includes(e.id)));
+      }
+      // Escape to close panels
+      if (e.key === "Escape") {
+        setEditingNode(null);
+        setEditingEdge(null);
+        setContextMenu(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedNodeIds, selectedEdgeIds, handleDeleteNode, setEdges]);
+
+  // ─── Context menu handler ─────────────────────────────────────────────────
+
+  const handleContextMenu = useCallback((e: MouseEvent, nodeId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, nodeId });
+  }, []);
+
+  // ─── Double-click handler (edit node) ─────────────────────────────────────
+
+  const handleDoubleClickNode = useCallback((nodeId: string) => {
+    handleEditNode(nodeId);
+  }, [handleEditNode]);
+
+  // ─── Edge double-click handler ────────────────────────────────────────────
+
+  const onEdgeDoubleClick = useCallback((_: MouseEvent, edge: Edge) => {
+    setEditingEdge(edge);
   }, []);
 
   // ─── Drag and drop from palette ───────────────────────────────────────────
@@ -425,7 +968,18 @@ export function NodeProductionPanel() {
 
   // ─── Node types ───────────────────────────────────────────────────────────
 
-  const nodeTypes = useMemo(() => ({ production: ProductionNode }), []);
+  const nodeTypes = useMemo(
+    () => ({
+      production: (props: NodeProps<Node<ProductionNodeData>>) => (
+        <ProductionNode
+          {...props}
+          onContextMenu={handleContextMenu}
+          onDoubleClick={handleDoubleClickNode}
+        />
+      ),
+    }),
+    [handleContextMenu, handleDoubleClickNode],
+  );
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -610,45 +1164,60 @@ export function NodeProductionPanel() {
         )}
 
         {/* Canvas / Empty state */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }} ref={reactFlowWrapper}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }} ref={reactFlowWrapper}>
           {selectedWorkflow ? (
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange as OnNodesChange}
-              onEdgesChange={onEdgesChange as OnEdgesChange}
-              onConnect={onConnect}
-              onInit={onInit}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-              nodeTypes={nodeTypes}
-              fitView
-              snapToGrid
-              snapGrid={[16, 16]}
-              style={{ background: "#0d1117" }}
-              defaultEdgeOptions={{ animated: true, style: { stroke: "#444", strokeWidth: 2 } }}
-            >
-              <Background color="#1e2530" gap={16} size={1} />
-              <Controls
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 4,
-                }}
-              />
-              <MiniMap
-                nodeColor={(node) => {
-                  const data = node.data as ProductionNodeData;
-                  return NODE_COLORS[data?.category ?? "production"]?.border ?? "#666";
-                }}
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 4,
-                }}
-                maskColor="rgba(0,0,0,0.5)"
-              />
-            </ReactFlow>
+            <>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange as OnNodesChange}
+                onEdgesChange={onEdgesChange as OnEdgesChange}
+                onConnect={onConnect}
+                onInit={onInit}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
+                onSelectionChange={onSelectionChange}
+                onEdgeDoubleClick={onEdgeDoubleClick}
+                nodeTypes={nodeTypes}
+                fitView
+                snapToGrid
+                snapGrid={[16, 16]}
+                style={{ background: "#0d1117" }}
+                defaultEdgeOptions={{ animated: true, style: { stroke: "#444", strokeWidth: 2 } }}
+                deleteKeyCode={null}
+              >
+                <Background color="#1e2530" gap={16} size={1} />
+                <Controls
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 4,
+                  }}
+                />
+                <MiniMap
+                  nodeColor={(node) => {
+                    const data = node.data as ProductionNodeData;
+                    return NODE_COLORS[data?.category ?? "production"]?.border ?? "#666";
+                  }}
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 4,
+                  }}
+                  maskColor="rgba(0,0,0,0.5)"
+                />
+              </ReactFlow>
+
+              {/* Node Property Panel */}
+              {editingNode && (
+                <NodePropertyPanel
+                  node={editingNode}
+                  onUpdate={handleUpdateNode}
+                  onClose={() => setEditingNode(null)}
+                  onDelete={handleDeleteNode}
+                />
+              )}
+            </>
           ) : (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}>
               <div style={{ textAlign: "center" }}>
@@ -662,6 +1231,27 @@ export function NodeProductionPanel() {
           )}
         </div>
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          nodeId={contextMenu.nodeId}
+          onClose={() => setContextMenu(null)}
+          onDeleteNode={handleDeleteNode}
+          onEditNode={handleEditNode}
+        />
+      )}
+
+      {/* Edge Label Editor */}
+      {editingEdge && (
+        <EdgeLabelEditor
+          edge={editingEdge}
+          onUpdateLabel={handleUpdateEdgeLabel}
+          onClose={() => setEditingEdge(null)}
+        />
+      )}
 
       {/* Create Modal */}
       {showCreateModal && (
