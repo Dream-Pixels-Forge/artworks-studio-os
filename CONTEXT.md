@@ -36,6 +36,8 @@ Workflow Engine
 
 Plugin Runtime
 
+Timeline Engine
+
 Current Design Principles
 
 Story First
@@ -124,9 +126,15 @@ preload bridge, Plugin Manager panel with detail view and file picker,
 command palette bridging for plugin commands, and runtime enable/disable
 wiring through DB.
 
-Upcoming Work
+Phase 10 (Production Timeline) — complete.
 
-Phase 10 — Production Timeline
+Timeline repository with CRUD, date-range queries, dependency tracking,
+progress analytics, and stats. Timeline IPC handlers, preload bridge,
+Timeline Panel with inline editing, progress bars, priority badges, and
+filtering. Command palette commands for task/milestone creation and
+stats viewing.
+
+Upcoming Work
 
 Phase 11 — Collaboration
 

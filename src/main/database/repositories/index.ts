@@ -18,3 +18,5 @@ export { WorkflowRepository } from "./workflow-repository.js";
 export type { Workflow, WorkflowDefinition, WorkflowStep, WorkflowState } from "./workflow-repository.js";
 export { PluginRepository } from "./plugin-repository.js";
 export type { PluginRecord, InstallPluginInput } from "./plugin-repository.js";
+export { TimelineRepository } from "./timeline-repository.js";
+export type { TimelineItem, TimelineType, TimelinePriority, CreateTimelineInput } from "./timeline-repository.js";

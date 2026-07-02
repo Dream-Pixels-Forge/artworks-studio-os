@@ -230,6 +230,26 @@ const artworksApi = {
       delete: (uuid: string) =>
         ipcRenderer.invoke("production:workflow:delete", uuid),
     },
+    timeline: {
+      list: (filter?: { projectUuid?: string; timelineType?: string }) =>
+        ipcRenderer.invoke("production:timeline:list", filter),
+      create: (input: {
+        name: string; timelineType: "task" | "milestone"; projectUuid?: string;
+        startDate?: string; endDate?: string; assignedTo?: string;
+        priority?: string; progress?: number; dependencies?: string[];
+      }) =>
+        ipcRenderer.invoke("production:timeline:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:timeline:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:timeline:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:timeline:delete", uuid),
+      dependents: (uuid: string) =>
+        ipcRenderer.invoke("production:timeline:dependents", uuid),
+      stats: (projectUuid?: string) =>
+        ipcRenderer.invoke("production:timeline:stats", projectUuid),
+    },
   },
 
   /** Plugin management — install, enable/disable, uninstall, execute commands. */

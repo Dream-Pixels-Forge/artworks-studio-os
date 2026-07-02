@@ -17,4 +17,4 @@ function load(version: number): [number, string] {
 }
 
 /** All bundled migrations, keyed by version number. */
-export const MIGRATIONS: MigrationSource = new Map<number, string>([load(1)]);
+export const MIGRATIONS: MigrationSource = new Map<number, string>([load(1), load(2)]);

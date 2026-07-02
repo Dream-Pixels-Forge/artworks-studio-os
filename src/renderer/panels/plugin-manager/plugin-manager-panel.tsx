@@ -109,7 +109,7 @@ export function PluginManagerPanel() {
     try {
       const result = await window.artworks.dialog.openFile({
         filters: [{ name: "Plugins", extensions: ["zip", "tar", "tgz"] }],
-      });
+      }) as { canceled: boolean; filePaths?: string[] };
       if (result.canceled || !result.filePaths?.length) return;
       const filePath = result.filePaths[0];
       await window.artworks.plugin.installFromFile(filePath);

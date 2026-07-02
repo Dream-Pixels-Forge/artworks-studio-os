@@ -18,6 +18,7 @@ import {
   ConversationRepository,
   PromptRepository,
   WorkflowRepository,
+  TimelineRepository,
   type CreateProjectInput,
   type CreateAssetInput,
   type CreateDocumentInput,
@@ -29,6 +30,8 @@ import {
   type Workflow,
   type WorkflowDefinition,
   type WorkflowState,
+  type CreateTimelineInput,
+  type TimelineType,
 } from "@main/database/repositories/index.js";
 import type {
   ProjectDto,
@@ -54,6 +57,7 @@ let versionRepo: VersionHistoryRepository;
 let convRepo: ConversationRepository;
 let promptRepo: PromptRepository;
 let wfRepo: WorkflowRepository;
+let tlRepo: TimelineRepository;
 
 /** Register all production IPC handlers. Call once on app startup. */
 export function registerProductionIpc(db: StudioDatabase): void {
@@ -66,6 +70,7 @@ export function registerProductionIpc(db: StudioDatabase): void {
   convRepo = new ConversationRepository(db);
   promptRepo = new PromptRepository(db);
   wfRepo = new WorkflowRepository(db);
+  tlRepo = new TimelineRepository(db);
 
   // --- Projects ---
   ipcMain.handle("production:project:list", () => projectRepo.list() as ProjectDto[]);
@@ -239,4 +244,22 @@ export function registerProductionIpc(db: StudioDatabase): void {
     wfRepo.updateDefinition(uuid, def));
   ipcMain.handle("production:workflow:delete", (_e, uuid: string) =>
     wfRepo.delete(uuid));
+
+  // --- Timeline (Phase 10: Production Timeline) ---
+  ipcMain.handle("production:timeline:list", (_e, filter?: { projectUuid?: string; timelineType?: TimelineType }) =>
+    tlRepo.list(filter));
+  ipcMain.handle("production:timeline:create", (_e, input: CreateTimelineInput) => {
+    if (!input.name?.trim()) throw new Error("Timeline item name is required");
+    return tlRepo.create(input);
+  });
+  ipcMain.handle("production:timeline:get", (_e, uuid: string) =>
+    tlRepo.findByUuid(uuid));
+  ipcMain.handle("production:timeline:update", (_e, uuid: string, updates: Record<string, unknown>) =>
+    tlRepo.update(uuid, updates as Parameters<typeof tlRepo.update>[1]));
+  ipcMain.handle("production:timeline:delete", (_e, uuid: string) =>
+    tlRepo.delete(uuid));
+  ipcMain.handle("production:timeline:dependents", (_e, uuid: string) =>
+    tlRepo.dependents(uuid));
+  ipcMain.handle("production:timeline:stats", (_e, projectUuid?: string) =>
+    tlRepo.stats(projectUuid));
 }

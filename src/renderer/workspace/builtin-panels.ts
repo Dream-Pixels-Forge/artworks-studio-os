@@ -29,6 +29,9 @@ import "../panels/workflow-builder/workflow-builder-panel.js";
 // Phase 9 panels
 import "../panels/plugin-manager/plugin-manager-panel.js";
 
+// Phase 10 panels
+import "../panels/timeline/timeline-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",

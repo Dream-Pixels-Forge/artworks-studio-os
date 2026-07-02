@@ -43,6 +43,51 @@ export function registerBuiltinCommands(): void {
       window.dispatchEvent(new Event(OPEN_SETTINGS_EVENT));
     },
   });
+
+  // --- Timeline commands (Phase 10) ---
+  commandRegistry.register({
+    id: "timeline:create-task",
+    title: "Create Task",
+    category: "Timeline",
+    keywords: ["task", "todo", "add"],
+    run: async () => {
+      const name = window.prompt("Task name:");
+      if (!name?.trim()) return;
+      await window.artworks.production.timeline.create({ name: name.trim(), timelineType: "task" });
+    },
+  });
+
+  commandRegistry.register({
+    id: "timeline:create-milestone",
+    title: "Create Milestone",
+    category: "Timeline",
+    keywords: ["milestone", "marker"],
+    run: async () => {
+      const name = window.prompt("Milestone name:");
+      if (!name?.trim()) return;
+      await window.artworks.production.timeline.create({ name: name.trim(), timelineType: "milestone" });
+    },
+  });
+
+  commandRegistry.register({
+    id: "timeline:show-stats",
+    title: "Show Timeline Stats",
+    category: "Timeline",
+    keywords: ["stats", "progress"],
+    run: async () => {
+      const stats = await window.artworks.production.timeline.stats() as {
+        tasks: number; milestones: number; completed: number; inProgress: number;
+        avgProgress: number; byPriority: { low: number; medium: number; high: number; critical: number };
+      };
+      window.alert(
+        `Timeline Stats:\n` +
+        `Tasks: ${stats.tasks} | Milestones: ${stats.milestones}\n` +
+        `Completed: ${stats.completed} | In Progress: ${stats.inProgress}\n` +
+        `Avg Progress: ${stats.avgProgress}%\n` +
+        `By Priority: Low=${stats.byPriority.low} Med=${stats.byPriority.medium} High=${stats.byPriority.high} Crit=${stats.byPriority.critical}`
+      );
+    },
+  });
 }
 
 /** Register commands from enabled plugins into the command palette. */
@@ -70,7 +115,7 @@ export async function registerPluginCommands(): Promise<void> {
           title: cmd.title,
           category: cmd.category ?? plugin.manifest.id ?? plugin.uuid,
           keywords: cmd.keywords,
-          run: () => window.artworks.plugin.executeCommand(plugin.uuid, cmd.id),
+          run: async () => { await window.artworks.plugin.executeCommand(plugin.uuid, cmd.id); },
         });
       }
     }
