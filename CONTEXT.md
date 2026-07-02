@@ -10,11 +10,11 @@ Build the operating system for AI-native filmmaking.
 
 Current Stage
 
-Production Workspace
+Production Operating System
 
 Current Priority
 
-AI Workspace
+Phase 18 — Production Lifecycle & System Integration
 
 Current Architecture
 
@@ -41,6 +41,12 @@ Timeline Engine
 Studio Platform
 
 Node-Based Production
+
+Marketplace
+
+Enterprise (RBAC)
+
+Production Intelligence
 
 Current Design Principles
 
@@ -179,12 +185,38 @@ MiniMap. Command palette commands for workflow creation, listing, stats,
 and panel opening. Schema migration v6 with node_workflows table and
 JSON nodes/edges/viewport storage.
 
+Phase 15 (Marketplace) — complete.
+
+Schema, repository, IPC handlers, Marketplace panel with listing
+browsing, install/uninstall, search, and detail views. Command palette
+commands for marketplace search and panel opening. Schema migration v7
+with marketplace_listings, marketplace_installations, and
+marketplace_reviews tables.
+
+Phase 16 (Enterprise) — complete.
+
+Team, Role, Permission, and AuditLog repositories with RBAC. Enterprise
+panel with team management, role assignment, permission matrix, and
+audit log viewer. Schema migration v8 with teams, roles, permissions,
+team_members, team_roles, role_permissions, and audit_log tables.
+
+Phase 17 (Production Intelligence) — complete.
+
+ProductionIntelligenceRepository with 8 cross-repo analytics queries:
+productionHealth, activityMetrics, timelineAnalytics, entityAnalytics,
+aiUsageMetrics, teamProductivity, productionSummary. 7 IPC handlers.
+Production Intelligence Panel with 4-tab dashboard (Overview, Timeline,
+Team, AI). Command palette commands for panel opening and stats.
+
 Upcoming Work
 
-Phase 15 — Marketplace
-
-Phase 16 — Enterprise
-
-Phase 17 — Production Intelligence
-
 Phase 18 — Production Operating System
+
+Final integration phase that unifies all subsystems into a cohesive OS experience.
+
+Scope:
+- Production Lifecycle State Machine — formal states (draft → active → review → published → archived) with transition rules and guards
+- Notification Center — centralized notification management, real-time alerts, unread tracking, cross-panel event bus
+- Backup & Recovery — database backup/restore, production export/import, crash recovery
+- System Health Dashboard — database integrity checks, performance metrics, storage usage
+- User Preferences — cross-session settings, API key management, theme selection, keyboard shortcuts
