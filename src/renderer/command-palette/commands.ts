@@ -309,6 +309,56 @@ export function registerBuiltinCommands(): void {
       window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "node-production" } }));
     },
   });
+
+  // --- Marketplace commands (Phase 15) ---
+  commandRegistry.register({
+    id: "marketplace:open-panel",
+    title: "Open Marketplace",
+    category: "Marketplace",
+    keywords: ["marketplace", "browse", "install", "plugins", "templates"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "marketplace" } }));
+    },
+  });
+
+  commandRegistry.register({
+    id: "marketplace:search",
+    title: "Search Marketplace",
+    category: "Marketplace",
+    keywords: ["search", "find", "browse"],
+    run: async () => {
+      const query = window.prompt("Search marketplace:");
+      if (!query?.trim()) return;
+      const results = await window.artworks.marketplace.list({ search: query.trim() }) as Array<{
+        name: string; version: string; category: string; rating: number;
+      }>;
+      const list = results.map((r) => `${r.name} v${r.version} (${r.category}) ★${r.rating.toFixed(1)}`).join("\n");
+      window.alert(`Search Results:\n${list || "No results found."}`);
+    },
+  });
+
+  commandRegistry.register({
+    id: "marketplace:show-stats",
+    title: "Show Marketplace Stats",
+    category: "Marketplace",
+    keywords: ["stats", "analytics", "marketplace"],
+    run: async () => {
+      const stats = await window.artworks.marketplace.stats() as {
+        totalListings: number; totalDownloads: number; avgRating: number;
+        byCategory: Record<string, number>; byType: Record<string, number>;
+      };
+      const cats = Object.entries(stats.byCategory).map(([k, v]) => `${k}: ${v}`).join(", ");
+      const types = Object.entries(stats.byType).map(([k, v]) => `${k}: ${v}`).join(", ");
+      window.alert(
+        `Marketplace Stats:\n` +
+        `Total Listings: ${stats.totalListings}\n` +
+        `Total Downloads: ${stats.totalDownloads.toLocaleString()}\n` +
+        `Avg Rating: ${stats.avgRating.toFixed(1)}\n` +
+        `By Category: ${cats || "None"}\n` +
+        `By Type: ${types || "None"}`
+      );
+    },
+  });
 }
 
 /** Register commands from enabled plugins into the command palette. */

@@ -449,6 +449,32 @@ const artworksApi = {
     executeCommand: (pluginId: string, commandId: string) =>
       ipcRenderer.invoke("plugin:executeCommand", pluginId, commandId),
   },
+
+  /** Marketplace — browse, install, rate, and publish listings. */
+  marketplace: {
+    list: (filter?: Record<string, unknown>) =>
+      ipcRenderer.invoke("marketplace:list", filter),
+    featured: (limit?: number) =>
+      ipcRenderer.invoke("marketplace:featured", limit),
+    recent: (limit?: number) =>
+      ipcRenderer.invoke("marketplace:recent", limit),
+    getByUuid: (uuid: string) =>
+      ipcRenderer.invoke("marketplace:getByUuid", uuid),
+    getBySlug: (slug: string) =>
+      ipcRenderer.invoke("marketplace:getBySlug", slug),
+    publish: (input: Record<string, unknown>) =>
+      ipcRenderer.invoke("marketplace:publish", input),
+    install: (uuid: string, version: string) =>
+      ipcRenderer.invoke("marketplace:install", uuid, version),
+    uninstall: (uuid: string) =>
+      ipcRenderer.invoke("marketplace:uninstall", uuid),
+    rate: (uuid: string, input: { rating: number }) =>
+      ipcRenderer.invoke("marketplace:rate", uuid, input),
+    delete: (uuid: string) =>
+      ipcRenderer.invoke("marketplace:delete", uuid),
+    stats: () =>
+      ipcRenderer.invoke("marketplace:stats"),
+  },
 };
 
 contextBridge.exposeInMainWorld("artworks", artworksApi);
