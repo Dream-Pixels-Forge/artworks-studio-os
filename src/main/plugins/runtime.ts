@@ -6,6 +6,7 @@
  */
 import { readFileSync } from "node:fs";
 import { createLogger } from "@main/core/logger.js";
+import type { StudioDatabase } from "@main/database/db.js";
 import { discoverPlugins, type DiscoveredPlugin } from "./discovery.js";
 import { parseManifest } from "./validator.js";
 import { buildHostServices } from "./host-services.js";
@@ -22,9 +23,11 @@ export interface RuntimeOptions {
 export class PluginRuntime {
   private loaded: LoadedPlugin[] = [];
   private readonly opts: RuntimeOptions;
+  private readonly db?: StudioDatabase | null;
 
-  constructor(opts: RuntimeOptions) {
+  constructor(opts: RuntimeOptions, db?: StudioDatabase | null) {
     this.opts = opts;
+    this.db = db;
   }
 
   /** Discover, validate, load, and activate all plugins. */
@@ -46,7 +49,7 @@ export class PluginRuntime {
     }
     const manifest = validation.manifest;
     const unsubscribeTrackers = new Set<() => void>();
-    const services = buildHostServices(unsubscribeTrackers);
+    const services = buildHostServices(unsubscribeTrackers, this.db);
     const context = buildPluginContext(manifest, services);
     const loaded = await loadPlugin(candidate, manifest, context, unsubscribeTrackers);
     if (loaded) this.loaded.push(loaded);

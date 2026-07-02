@@ -52,10 +52,13 @@ app.whenReady().then(async () => {
   container.register(DatabaseToken, () => database!);
 
   // Load and activate plugins before the window opens.
-  pluginRuntime = new PluginRuntime({
-    builtinDir: BUILTIN_PLUGINS_DIR,
-    userDir: join(config.home, "plugins"),
-  });
+  pluginRuntime = new PluginRuntime(
+    {
+      builtinDir: BUILTIN_PLUGINS_DIR,
+      userDir: join(config.home, "plugins"),
+    },
+    database,
+  );
   await pluginRuntime.start();
 
   // Initialize theming (persistence + OS bridging).
