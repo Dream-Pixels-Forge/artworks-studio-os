@@ -225,6 +225,24 @@ const artworksApi = {
         ipcRenderer.invoke("production:workflow:delete", uuid),
     },
   },
+
+  /** Plugin management — install, enable/disable, uninstall. */
+  plugin: {
+    list: () =>
+      ipcRenderer.invoke("plugin:list"),
+    get: (uuid: string) =>
+      ipcRenderer.invoke("plugin:get", uuid),
+    install: (input: { manifest: unknown; enabled?: boolean }) =>
+      ipcRenderer.invoke("plugin:install", input),
+    enable: (uuid: string) =>
+      ipcRenderer.invoke("plugin:enable", uuid),
+    disable: (uuid: string) =>
+      ipcRenderer.invoke("plugin:disable", uuid),
+    uninstall: (uuid: string) =>
+      ipcRenderer.invoke("plugin:uninstall", uuid),
+    getManifest: (uuid: string) =>
+      ipcRenderer.invoke("plugin:getManifest", uuid),
+  },
 };
 
 contextBridge.exposeInMainWorld("artworks", artworksApi);
