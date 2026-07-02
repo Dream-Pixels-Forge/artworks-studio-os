@@ -29,6 +29,21 @@ import "../panels/workflow-builder/workflow-builder-panel.js";
 // Phase 9 panels
 import "../panels/plugin-manager/plugin-manager-panel.js";
 
+// Phase 10 panels
+import "../panels/timeline/timeline-panel.js";
+
+// Phase 11 panels
+import "../panels/collaboration/collaboration-panel.js";
+
+// Phase 12 panels
+import "../panels/studio/studio-panel.js";
+
+// Phase 13 panels
+import "../panels/agent-teams/agent-teams-panel.js";
+
+// Phase 14 panels
+import "../panels/node-production/node-production-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",

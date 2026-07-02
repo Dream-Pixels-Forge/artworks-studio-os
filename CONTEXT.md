@@ -36,6 +36,10 @@ Workflow Engine
 
 Plugin Runtime
 
+Timeline Engine
+
+Studio Platform
+
 Current Design Principles
 
 Story First
@@ -124,17 +128,52 @@ preload bridge, Plugin Manager panel with detail view and file picker,
 command palette bridging for plugin commands, and runtime enable/disable
 wiring through DB.
 
+Phase 10 (Production Timeline) — complete.
+
+Timeline repository with CRUD, date-range queries, dependency tracking,
+progress analytics, and stats. Timeline IPC handlers, preload bridge,
+Timeline Panel with inline editing, progress bars, priority badges, and
+filtering. Command palette commands for task/milestone creation and
+stats viewing.
+
+Phase 11 (Collaboration) — complete.
+
+User, Activity, and Comment repositories with CRUD and queries. IPC
+handlers, preload bridge, Collaboration panel with team management,
+activity feed, and comments. Command palette commands for user
+management and activity viewing. Schema migration v3 with users,
+activity_log, and comments tables.
+
+Phase 12 (Studio Platform) — complete.
+
+Department, Approval, and Review repositories with CRUD and queries.
+IPC handlers, preload bridge, Studio Panel with department management,
+approval workflow, review pipeline, and analytics overview. Command
+palette commands for department creation, studio stats, and panel
+opening. Schema migration v4 with departments, department_members,
+approvals, and reviews tables.
+
+Phase 13 (AI Production Teams) — complete.
+
+Agent, AgentTask, and AgentMessage repositories with CRUD, status
+management, and stats. 25+ IPC handlers for agent lifecycle, task
+workflow, and message tracking. Preload bridge with agent, agentTask,
+agentMessage APIs. Agent Teams panel with overview, agent management,
+task management, and message history. Command palette commands for
+agent creation, listing, and stats. Schema migration v5 with ai_agents,
+agent_tasks, and agent_messages tables.
+
+Phase 14 (Node-Based Production) — complete.
+
+NodeWorkflowRepository with CRUD and graph operations. 8 IPC handlers
+for workflow lifecycle and graph management. Preload bridge with
+nodeWorkflow API. Node Production Panel with React Flow canvas-based
+node editor, workflow creation modal, status management, and graph
+persistence. Command palette commands for workflow creation, listing,
+stats, and panel opening. Schema migration v6 with node_workflows table
+and JSON nodes/edges/viewport storage.
+
 Upcoming Work
-
-Phase 10 — Production Timeline
-
-Phase 11 — Collaboration
-
-Phase 12 — Studio Platform
-
-Phase 13 — AI Production Teams
-
-Phase 14 — Node-Based Production
 
 Phase 15 — Marketplace
 

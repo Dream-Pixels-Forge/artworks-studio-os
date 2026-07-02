@@ -37,7 +37,7 @@ export function TreeNodeView({ node, depth, onSelect, selectedPath }: TreeNodeVi
     if (!children) {
       setLoading(true);
       try {
-        const loaded = await window.artworks.explorer.expand(node.path);
+        const loaded = await window.artworks.explorer.expand(node.path) as TreeNode[];
         setChildren(loaded);
       } finally {
         setLoading(false);

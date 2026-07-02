@@ -230,6 +230,202 @@ const artworksApi = {
       delete: (uuid: string) =>
         ipcRenderer.invoke("production:workflow:delete", uuid),
     },
+    timeline: {
+      list: (filter?: { projectUuid?: string; timelineType?: string }) =>
+        ipcRenderer.invoke("production:timeline:list", filter),
+      create: (input: {
+        name: string; timelineType: "task" | "milestone"; projectUuid?: string;
+        startDate?: string; endDate?: string; assignedTo?: string;
+        priority?: string; progress?: number; dependencies?: string[];
+      }) =>
+        ipcRenderer.invoke("production:timeline:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:timeline:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:timeline:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:timeline:delete", uuid),
+      dependents: (uuid: string) =>
+        ipcRenderer.invoke("production:timeline:dependents", uuid),
+      stats: (projectUuid?: string) =>
+        ipcRenderer.invoke("production:timeline:stats", projectUuid),
+    },
+
+    /** Collaboration — users, activity feed, comments. */
+    user: {
+      list: () =>
+        ipcRenderer.invoke("production:user:list"),
+      listActive: () =>
+        ipcRenderer.invoke("production:user:listActive"),
+      create: (input: { displayName: string; email?: string; avatarUrl?: string; role?: string }) =>
+        ipcRenderer.invoke("production:user:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:user:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:user:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:user:delete", uuid),
+      stats: () =>
+        ipcRenderer.invoke("production:user:stats"),
+    },
+    activity: {
+      list: (filter?: { userUuid?: string; entityUuid?: string; entityType?: string; action?: string; since?: string }, limit?: number) =>
+        ipcRenderer.invoke("production:activity:list", filter, limit),
+      log: (input: { userUuid?: string; entityUuid?: string; action: string; entityType: string; details?: Record<string, unknown> }) =>
+        ipcRenderer.invoke("production:activity:log", input),
+      count: (filter?: { userUuid?: string; entityType?: string; action?: string }) =>
+        ipcRenderer.invoke("production:activity:count", filter),
+    },
+    comment: {
+      listByEntity: (entityUuid: string) =>
+        ipcRenderer.invoke("production:comment:listByEntity", entityUuid),
+      listRecent: (limit?: number) =>
+        ipcRenderer.invoke("production:comment:listRecent", limit),
+      create: (input: { entityUuid: string; body: string; userUuid?: string; parentUuid?: string }) =>
+        ipcRenderer.invoke("production:comment:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:comment:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:comment:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:comment:delete", uuid),
+      countByEntity: (entityUuid: string) =>
+        ipcRenderer.invoke("production:comment:countByEntity", entityUuid),
+      countUnresolved: (entityUuid: string) =>
+        ipcRenderer.invoke("production:comment:countUnresolved", entityUuid),
+    },
+
+    /** Studio Platform — departments, approvals, reviews. */
+    department: {
+      list: () =>
+        ipcRenderer.invoke("production:department:list"),
+      create: (input: { name: string; description?: string; leadUuid?: string }) =>
+        ipcRenderer.invoke("production:department:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:department:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:department:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:department:delete", uuid),
+      members: (departmentUuid: string) =>
+        ipcRenderer.invoke("production:department:members", departmentUuid),
+      addMember: (input: { departmentUuid: string; userUuid: string; role?: "lead" | "member" }) =>
+        ipcRenderer.invoke("production:department:addMember", input),
+      removeMember: (departmentUuid: string, userUuid: string) =>
+        ipcRenderer.invoke("production:department:removeMember", departmentUuid, userUuid),
+      userDepartments: (userUuid: string) =>
+        ipcRenderer.invoke("production:department:userDepartments", userUuid),
+      stats: () =>
+        ipcRenderer.invoke("production:department:stats"),
+    },
+    approval: {
+      list: (filters?: { status?: string; approverUuid?: string; requesterUuid?: string }) =>
+        ipcRenderer.invoke("production:approval:list", filters),
+      create: (input: { entityUuid: string; requesterUuid: string; approverUuid: string; notes?: string }) =>
+        ipcRenderer.invoke("production:approval:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:approval:get", uuid),
+      updateStatus: (uuid: string, status: string, notes?: string) =>
+        ipcRenderer.invoke("production:approval:updateStatus", uuid, status, notes),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:approval:delete", uuid),
+      byEntity: (entityUuid: string) =>
+        ipcRenderer.invoke("production:approval:byEntity", entityUuid),
+      stats: () =>
+        ipcRenderer.invoke("production:approval:stats"),
+    },
+    review: {
+      list: (filters?: { status?: string; reviewerUuid?: string }) =>
+        ipcRenderer.invoke("production:review:list", filters),
+      create: (input: { entityUuid: string; reviewerUuid: string }) =>
+        ipcRenderer.invoke("production:review:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:review:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:review:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:review:delete", uuid),
+      byEntity: (entityUuid: string) =>
+        ipcRenderer.invoke("production:review:byEntity", entityUuid),
+      stats: () =>
+        ipcRenderer.invoke("production:review:stats"),
+    },
+
+    /** AI Production Teams — agents, tasks, messages. */
+    agent: {
+      list: () =>
+        ipcRenderer.invoke("production:agent:list"),
+      create: (input: { name: string; role: string; systemPrompt?: string; model?: string; avatar?: string }) =>
+        ipcRenderer.invoke("production:agent:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:agent:get", uuid),
+      getByRole: (role: string) =>
+        ipcRenderer.invoke("production:agent:getByRole", role),
+      update: (uuid: string, input: { name?: string; role?: string; systemPrompt?: string; model?: string; avatar?: string }) =>
+        ipcRenderer.invoke("production:agent:update", uuid, input),
+      updateStatus: (uuid: string, status: "idle" | "busy" | "paused" | "offline") =>
+        ipcRenderer.invoke("production:agent:updateStatus", uuid, status),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:agent:delete", uuid),
+      stats: () =>
+        ipcRenderer.invoke("production:agent:stats"),
+    },
+    agentTask: {
+      list: (filters?: { status?: string; agentId?: string }) =>
+        ipcRenderer.invoke("production:agentTask:list", filters),
+      create: (input: { agentId: string; title: string; description?: string; priority?: string; input?: Record<string, unknown>; dueDate?: string }) =>
+        ipcRenderer.invoke("production:agentTask:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:agentTask:get", uuid),
+      update: (uuid: string, input: { title?: string; description?: string; priority?: string; input?: Record<string, unknown>; dueDate?: string }) =>
+        ipcRenderer.invoke("production:agentTask:update", uuid, input),
+      start: (uuid: string) =>
+        ipcRenderer.invoke("production:agentTask:start", uuid),
+      complete: (uuid: string, output: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:agentTask:complete", uuid, output),
+      fail: (uuid: string, reason: string) =>
+        ipcRenderer.invoke("production:agentTask:fail", uuid, reason),
+      cancel: (uuid: string) =>
+        ipcRenderer.invoke("production:agentTask:cancel", uuid),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:agentTask:delete", uuid),
+      stats: () =>
+        ipcRenderer.invoke("production:agentTask:stats"),
+    },
+    agentMessage: {
+      list: (filters?: { agentId?: string; taskId?: string; limit?: number }) =>
+        ipcRenderer.invoke("production:agentMessage:list", filters),
+      create: (input: { agentId: string; taskId?: string; role: string; content: string; tokensUsed?: number; model?: string }) =>
+        ipcRenderer.invoke("production:agentMessage:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:agentMessage:get", uuid),
+      deleteByAgent: (agentId: string) =>
+        ipcRenderer.invoke("production:agentMessage:deleteByAgent", agentId),
+      deleteByTask: (taskId: string) =>
+        ipcRenderer.invoke("production:agentMessage:deleteByTask", taskId),
+      stats: (agentId: string) =>
+        ipcRenderer.invoke("production:agentMessage:stats", agentId),
+    },
+
+    /** Node Workflows — visual production workflows with React Flow canvas. */
+    nodeWorkflow: {
+      list: () =>
+        ipcRenderer.invoke("production:nodeWorkflow:list"),
+      create: (input: { name: string; description?: string; nodes?: string; edges?: string; viewport?: string }) =>
+        ipcRenderer.invoke("production:nodeWorkflow:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:nodeWorkflow:get", uuid),
+      update: (uuid: string, input: { name?: string; description?: string; status?: string; nodes?: string; edges?: string; viewport?: string }) =>
+        ipcRenderer.invoke("production:nodeWorkflow:update", uuid, input),
+      updateGraph: (uuid: string, nodes: string, edges: string, viewport?: string) =>
+        ipcRenderer.invoke("production:nodeWorkflow:updateGraph", uuid, nodes, edges, viewport),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:nodeWorkflow:delete", uuid),
+      listByStatus: (status: "draft" | "active" | "archived") =>
+        ipcRenderer.invoke("production:nodeWorkflow:listByStatus", status),
+      stats: () =>
+        ipcRenderer.invoke("production:nodeWorkflow:stats"),
+    },
   },
 
   /** Plugin management — install, enable/disable, uninstall, execute commands. */
