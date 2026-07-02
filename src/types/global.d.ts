@@ -247,6 +247,56 @@ interface ArtworksApi {
     delete: (uuid: string) => Promise<unknown>;
     stats: () => Promise<unknown>;
   };
+
+  enterprise: {
+    team: {
+      list: () => Promise<unknown>;
+      create: (input: { name: string; slug: string; description?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      update: (uuid: string, input: { name?: string; slug?: string; description?: string }) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      addMember: (input: { teamUuid: string; userUuid: string; role?: string }) => Promise<unknown>;
+      removeMember: (teamUuid: string, userUuid: string) => Promise<unknown>;
+      updateMemberRole: (input: { teamUuid: string; userUuid: string; role: string }) => Promise<unknown>;
+      userTeams: (userUuid: string) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+    role: {
+      list: () => Promise<unknown>;
+      create: (input: { name: string; description?: string; isSystem?: boolean }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      update: (uuid: string, input: { name?: string; description?: string }) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      assignPermission: (roleUuid: string, permissionUuid: string) => Promise<unknown>;
+      revokePermission: (roleUuid: string, permissionUuid: string) => Promise<unknown>;
+      assignToUser: (input: { userUuid: string; roleUuid: string }) => Promise<unknown>;
+      revokeFromUser: (input: { userUuid: string; roleUuid: string }) => Promise<unknown>;
+      userRoles: (userUuid: string) => Promise<unknown>;
+      userHasPermission: (input: { userUuid: string; permission: string }) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+    permission: {
+      list: () => Promise<unknown>;
+      create: (input: { name: string; resource: string; action: string; description?: string }) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+    };
+    audit: {
+      list: (filter?: { user_uuid?: string; action?: string; resource_type?: string; since?: string; until?: string; limit?: number; offset?: number }) => Promise<unknown>;
+      log: (input: { user_uuid?: string; action: string; resource_type: string; resource_uuid?: string; details?: Record<string, unknown> }) => Promise<unknown>;
+      count: (filter?: { user_uuid?: string; action?: string; resource_type?: string }) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+    license: {
+      list: () => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      getActive: () => Promise<unknown>;
+      create: (input: { key: string; type?: string; holder_name?: string; holder_email?: string; features?: string[]; max_users?: number; max_projects?: number; expires_at?: string | null }) => Promise<unknown>;
+      update: (uuid: string, input: Record<string, unknown>) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      hasFeature: (input: { uuid: string; feature: string }) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+  };
 }
 
 declare global {

@@ -359,6 +359,50 @@ export function registerBuiltinCommands(): void {
       );
     },
   });
+
+  // --- Enterprise commands (Phase 16) ---
+  commandRegistry.register({
+    id: "enterprise:open-panel",
+    title: "Open Enterprise Panel",
+    category: "Enterprise",
+    keywords: ["enterprise", "teams", "roles", "audit", "license", "admin"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "enterprise" } }));
+    },
+  });
+
+  commandRegistry.register({
+    id: "enterprise:create-team",
+    title: "Create Team",
+    category: "Enterprise",
+    keywords: ["team", "create", "add"],
+    run: async () => {
+      const name = window.prompt("Team name:");
+      if (!name?.trim()) return;
+      const slug = name.trim().toLowerCase().replace(/\s+/g, "-");
+      await window.artworks.enterprise.team.create({ name: name.trim(), slug });
+    },
+  });
+
+  commandRegistry.register({
+    id: "enterprise:show-stats",
+    title: "Show Enterprise Stats",
+    category: "Enterprise",
+    keywords: ["stats", "enterprise", "teams", "roles"],
+    run: async () => {
+      const [teamStats, roleStats, auditCount] = await Promise.all([
+        window.artworks.enterprise.team.stats() as Promise<{ total: number; members: number }>,
+        window.artworks.enterprise.role.stats() as Promise<{ total: number; system: number }>,
+        window.artworks.enterprise.audit.count() as Promise<number>,
+      ]);
+      window.alert(
+        `Enterprise Stats:\n` +
+        `Teams: ${teamStats.total} (${teamStats.members} members)\n` +
+        `Roles: ${roleStats.total} (${roleStats.system} system)\n` +
+        `Audit Entries: ${auditCount}`
+      );
+    },
+  });
 }
 
 /** Register commands from enabled plugins into the command palette. */

@@ -475,6 +475,94 @@ const artworksApi = {
     stats: () =>
       ipcRenderer.invoke("marketplace:stats"),
   },
+
+  /** Enterprise — teams, roles, permissions, audit log, licenses. */
+  enterprise: {
+    team: {
+      list: () =>
+        ipcRenderer.invoke("enterprise:team:list"),
+      create: (input: { name: string; slug: string; description?: string }) =>
+        ipcRenderer.invoke("enterprise:team:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("enterprise:team:get", uuid),
+      update: (uuid: string, input: { name?: string; slug?: string; description?: string }) =>
+        ipcRenderer.invoke("enterprise:team:update", uuid, input),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("enterprise:team:delete", uuid),
+      addMember: (input: { teamUuid: string; userUuid: string; role?: string }) =>
+        ipcRenderer.invoke("enterprise:team:addMember", input),
+      removeMember: (teamUuid: string, userUuid: string) =>
+        ipcRenderer.invoke("enterprise:team:removeMember", teamUuid, userUuid),
+      updateMemberRole: (input: { teamUuid: string; userUuid: string; role: string }) =>
+        ipcRenderer.invoke("enterprise:team:updateMemberRole", input),
+      userTeams: (userUuid: string) =>
+        ipcRenderer.invoke("enterprise:team:userTeams", userUuid),
+      stats: () =>
+        ipcRenderer.invoke("enterprise:team:stats"),
+    },
+    role: {
+      list: () =>
+        ipcRenderer.invoke("enterprise:role:list"),
+      create: (input: { name: string; description?: string; isSystem?: boolean }) =>
+        ipcRenderer.invoke("enterprise:role:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("enterprise:role:get", uuid),
+      update: (uuid: string, input: { name?: string; description?: string }) =>
+        ipcRenderer.invoke("enterprise:role:update", uuid, input),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("enterprise:role:delete", uuid),
+      assignPermission: (roleUuid: string, permissionUuid: string) =>
+        ipcRenderer.invoke("enterprise:role:assignPermission", roleUuid, permissionUuid),
+      revokePermission: (roleUuid: string, permissionUuid: string) =>
+        ipcRenderer.invoke("enterprise:role:revokePermission", roleUuid, permissionUuid),
+      assignToUser: (input: { userUuid: string; roleUuid: string }) =>
+        ipcRenderer.invoke("enterprise:role:assignToUser", input),
+      revokeFromUser: (input: { userUuid: string; roleUuid: string }) =>
+        ipcRenderer.invoke("enterprise:role:revokeFromUser", input),
+      userRoles: (userUuid: string) =>
+        ipcRenderer.invoke("enterprise:role:userRoles", userUuid),
+      userHasPermission: (input: { userUuid: string; permission: string }) =>
+        ipcRenderer.invoke("enterprise:role:userHasPermission", input),
+      stats: () =>
+        ipcRenderer.invoke("enterprise:role:stats"),
+    },
+    permission: {
+      list: () =>
+        ipcRenderer.invoke("enterprise:permission:list"),
+      create: (input: { name: string; resource: string; action: string; description?: string }) =>
+        ipcRenderer.invoke("enterprise:permission:create", input),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("enterprise:permission:delete", uuid),
+    },
+    audit: {
+      list: (filter?: { user_uuid?: string; action?: string; resource_type?: string; since?: string; until?: string; limit?: number; offset?: number }) =>
+        ipcRenderer.invoke("enterprise:audit:list", filter),
+      log: (input: { user_uuid?: string; action: string; resource_type: string; resource_uuid?: string; details?: Record<string, unknown> }) =>
+        ipcRenderer.invoke("enterprise:audit:log", input),
+      count: (filter?: { user_uuid?: string; action?: string; resource_type?: string }) =>
+        ipcRenderer.invoke("enterprise:audit:count", filter),
+      stats: () =>
+        ipcRenderer.invoke("enterprise:audit:stats"),
+    },
+    license: {
+      list: () =>
+        ipcRenderer.invoke("enterprise:license:list"),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("enterprise:license:get", uuid),
+      getActive: () =>
+        ipcRenderer.invoke("enterprise:license:getActive"),
+      create: (input: { key: string; type?: string; holder_name?: string; holder_email?: string; features?: string[]; max_users?: number; max_projects?: number; expires_at?: string | null }) =>
+        ipcRenderer.invoke("enterprise:license:create", input),
+      update: (uuid: string, input: Record<string, unknown>) =>
+        ipcRenderer.invoke("enterprise:license:update", uuid, input),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("enterprise:license:delete", uuid),
+      hasFeature: (input: { uuid: string; feature: string }) =>
+        ipcRenderer.invoke("enterprise:license:hasFeature", input),
+      stats: () =>
+        ipcRenderer.invoke("enterprise:license:stats"),
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld("artworks", artworksApi);
