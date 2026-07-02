@@ -23,7 +23,9 @@ function readConfig(): StudioConfig {
     environment:
       (process.env["AW_ENVIRONMENT"] as StudioConfig["environment"]) ??
       "production",
-    isDev: process.env["NODE_ENV"] === "development",
+    // Tests run from source, so treat "test" the same as "development"
+    // for entry-resolution purposes (e.g. loading .ts plugin files).
+    isDev: process.env["NODE_ENV"] === "development" || process.env["NODE_ENV"] === "test",
   };
 }
 

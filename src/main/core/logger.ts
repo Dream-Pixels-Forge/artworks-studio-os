@@ -1,9 +1,9 @@
 /**
  * Structured logger.
  *
- * A thin wrapper around console with leveled output. In production this
- * writes to the OS log; in development it formats for a terminal. Kept
- * dependency-free for the foundation phase.
+ * A thin wrapper around console with leveled output. Both dev and prod
+ * write to stdout/stderr; a future phase can swap this for OS-native
+ * logging. Kept dependency-free for the foundation phase.
  */
 import { config } from "./config.js";
 

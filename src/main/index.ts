@@ -16,6 +16,7 @@ import { MIGRATIONS } from "@main/database/migrations.js";
 import { StudioDatabase } from "@main/database/db.js";
 import { PluginRuntime } from "@main/plugins/index.js";
 import { ThemeService, registerThemeIpc, SettingsService, registerSettingsIpc, registerStudioStatusIpc } from "@main/services/index.js";
+import { registerProductionIpc } from "@main/services/production-ipc.js";
 import { registerExplorerHandlers } from "@main/integrations/production-explorer/ipc-handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -40,7 +41,7 @@ if (!gotLock) {
 }
 
 app.on("second-instance", () => {
-  // Focus the main window when a second launch is attempted.
+  // createMain focuses the existing window if one is already open.
   windowManager.createMain();
 });
 
@@ -67,6 +68,9 @@ app.whenReady().then(async () => {
 
   // Register the project explorer IPC handlers.
   registerExplorerHandlers();
+
+  // Register production IPC (project, asset, document, search).
+  registerProductionIpc(database);
 
   // Window controls (title bar) + the main window with persisted state.
   registerWindowIpc();
@@ -98,6 +102,10 @@ app.on("before-quit", (event) => {
         await pluginRuntime.stop();
         pluginRuntime = undefined;
       }
+      // Close the database AFTER plugin teardown so plugin onDeactivate
+      // handlers can still touch the DB if they need to.
+      database?.close();
+      database = undefined;
     } finally {
       app.quit();
     }
@@ -105,7 +113,8 @@ app.on("before-quit", (event) => {
 });
 
 app.on("window-all-closed", () => {
-  database?.close();
+  // DB is closed in before-quit, not here, to keep it available
+  // during plugin teardown.
   if (process.platform !== "darwin") app.quit();
 });
 

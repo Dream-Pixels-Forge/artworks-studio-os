@@ -12,7 +12,7 @@ import type {
 } from "@shared/production-explorer/types.js";
 import { TreeNodeView } from "./tree-node.js";
 
-export function ProjectExplorerPanel() {
+export function ProjectExplorerPanel(_props: { isActive: boolean }) {
   const [productions, setProductions] = useState<ProductionSummary[]>([]);
   const [active, setActive] = useState<ProductionSummary | null>(null);
   const [tree, setTree] = useState<TreeNode | null>(null);

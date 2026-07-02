@@ -10,6 +10,10 @@ import { StudioShell } from "./studio-shell.js";
 import { loadTokens } from "../ui/tokens/index.js";
 import { ThemeProvider } from "../ui/theme-provider.js";
 import "./styles.css";
+import "../workspace/workspace.css";
+import "../panels/panels.css";
+import "../panels/phase3-panels.css";
+import "../panels/phase4-8-panels.css";
 
 loadTokens(); // synchronous default; ThemeProvider corrects once IPC resolves
 

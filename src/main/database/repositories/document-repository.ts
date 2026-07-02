@@ -90,6 +90,26 @@ export class DocumentRepository {
       .filter((d): d is Document => d !== undefined);
   }
 
+  /** List all documents regardless of project, newest first. */
+  listAll(): Document[] {
+    const rows = this.db.all<EntityRow>(
+      "SELECT * FROM entities WHERE type = ? ORDER BY updated_at DESC",
+      ["document"],
+    );
+    return rows
+      .map((row) => {
+        const typeRow = this.db.get<DocumentRow>("SELECT * FROM documents WHERE uuid = ?", [row.uuid]);
+        if (!typeRow) return undefined;
+        return {
+          ...entityRowToEntity(row),
+          projectUuid: typeRow.project_uuid ?? undefined,
+          docType: typeRow.doc_type,
+          content: typeRow.content,
+        } as Document;
+      })
+      .filter((d): d is Document => d !== undefined);
+  }
+
   update(doc: Document): void {
     this.db.transaction(() => {
       this.entities.updateEntity({ ...doc, updatedAt: new Date().toISOString() });

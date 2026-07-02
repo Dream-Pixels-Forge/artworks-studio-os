@@ -2,7 +2,7 @@
 
 # plugin-sdk.md
 
-Version: 1.0
+Version: 0.1.0 (runtime); 1.0 (target spec)
 Status: Engineering Specification
 Audience: Plugin Developers, AI Developers, Third-Party Integrators
 

@@ -111,12 +111,12 @@ Production Engine
 # Repository Structure
 
 ```text
-/docs
-/src
-/plugins
-/assets
-/examples
-/tests
+/docs       — architecture, database, plugin SDK, design system, PRD, roadmap
+/src        — Electron app (main / preload / renderer / shared)
+/aw         — Python CLI sidecar (workspace + production operations)
+/plugins    — reference plugins (example-hello)
+/assets     — branding, banners
+/tests      — (per-module test files live alongside source)
 ```
 
 ---
