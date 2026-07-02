@@ -1,7 +1,9 @@
 /**
  * Plugins: discovery, loading, lifecycle, permissions, sandboxing.
  *
- * Skeleton for Phase 0 — the plugin runtime arrives in Phase 1. The
- * contract plugins are written against lives in src/shared/sdk.
+ * The plugin runtime is implemented: discovery, manifest validation,
+ * permission-gated host services, ESM dynamic import, activation,
+ * and clean teardown. The contract plugins are written against lives
+ * in src/shared/sdk.
  */
 export {};

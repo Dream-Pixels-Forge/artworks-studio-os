@@ -9,6 +9,7 @@ import { pathToFileURL } from "node:url";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { createLogger } from "@main/core/logger.js";
+import { config } from "@main/core/config.js";
 import type { PluginContext, PluginLifecycle, PluginManifest } from "@shared/sdk/index.js";
 import type { DiscoveredPlugin } from "./discovery.js";
 
@@ -97,8 +98,11 @@ function resolveEntry(dir: string): string | undefined {
     join(dir, "dist", "index.js"),
     join(dir, "index.js"),
     join(dir, "index.mjs"),
-    join(dir, "index.ts"), // dev only
   ];
+  // Allow .ts in dev so source plugins load without a build step.
+  if (config.isDev) {
+    candidates.push(join(dir, "index.ts"));
+  }
   return candidates.find((p) => existsSync(p));
 }
 

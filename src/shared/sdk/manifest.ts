@@ -26,7 +26,11 @@ export const ALL_PERMISSIONS: readonly Permission[] = Object.values(Permission);
 export interface PluginCommand {
   readonly id: string;
   readonly title: string;
-  /** Event keys this command listens for, allowing declarative wiring. */
+  /**
+   * Event types this command responds to. Declarative metadata for
+   * discovery and the future marketplace — the plugin is still
+   * responsible for subscribing in its own activate() function.
+   */
   readonly listensTo?: readonly string[];
 }
 

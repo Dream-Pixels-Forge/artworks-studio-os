@@ -10,11 +10,11 @@ Build the operating system for AI-native filmmaking.
 
 Current Stage
 
-Architecture
+Production Workspace
 
 Current Priority
 
-Production Foundation
+AI Workspace
 
 Current Architecture
 
@@ -29,6 +29,12 @@ Git
 Documentation
 
 AI Departments
+
+Asset Pipeline
+
+Workflow Engine
+
+Plugin Runtime
 
 Current Design Principles
 
@@ -70,15 +76,63 @@ Phase Status
 
 Phase 0 (Foundation) — complete.
 
-CI/CD, platform scaffold (Electron + React + TS), design system, database
-schema, and the plugin SDK contract are in place. See CHANGELOG.md.
+Phase 1 (Desktop Foundation) — complete.
+
+Workspace/docking system with panel registry, layout slots, persisted state.
+
+Phase 2 (Production Workspace) — complete.
+
+Production IPC, Project Manager, Asset Browser, Markdown Editor, Search, Dashboard.
+
+Phase 3 (Knowledge Graph) — complete.
+
+Graph IPC, version history repository, Knowledge Graph panel, Version History panel.
+
+Phase 4 (AI Workspace) — complete.
+
+Conversation repository, AI Chat panel.
+
+Phase 5 (Story Development) — complete.
+
+Story Bible panel with specialized doc types.
+
+Phase 6 (Prompt Intelligence) — complete.
+
+Prompt repository, Prompt Composer panel with template rendering.
+
+Phase 7 (Asset Pipeline) — complete.
+
+Asset Browser with type filtering and CRUD.
+
+Phase 8 (Production Automation) — complete.
+
+Workflow repository, Workflow Builder panel with step editor.
+
+Phase 3–8 Hardening — complete.
+
+Bug fixes across Phases 3-8: document list NULL-vs-empty-string query,
+transaction safety in WorkflowRepository and ConversationRepository,
+FTS5 query escaping, Knowledge Graph type coverage, dashboard entity
+count, IPC input validation, and error logging.
 
 Upcoming Work
 
-Phase 1 — Desktop Foundation
+Phase 9 — Plugin Platform
 
-Plugin runtime (loads and sandboxes plugins against the SDK contract).
+Phase 10 — Production Timeline
 
-Live SQLite repositories (CRUD on the v1 schema).
+Phase 11 — Collaboration
 
-AI departments.
+Phase 12 — Studio Platform
+
+Phase 13 — AI Production Teams
+
+Phase 14 — Node-Based Production
+
+Phase 15 — Marketplace
+
+Phase 16 — Enterprise
+
+Phase 17 — Production Intelligence
+
+Phase 18 — Production Operating System

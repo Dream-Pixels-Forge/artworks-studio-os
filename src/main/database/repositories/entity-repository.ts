@@ -65,12 +65,13 @@ export class EntityRepository {
 
   /** Full-text search over entity name/type/metadata. Returns base entities. */
   search(query: string): Entity[] {
+    const safe = `"${query.replace(/"/g, '""')}"`;
     const rows = this.db.all<EntityRow>(
       `SELECT e.* FROM entities_fts
        JOIN entities e ON e.uuid = entities_fts.uuid
        WHERE entities_fts MATCH ?
        ORDER BY rank`,
-      [query],
+      [safe],
     );
     return rows.map(entityRowToEntity);
   }
@@ -81,6 +82,12 @@ export class EntityRepository {
       "SELECT COUNT(*) AS count FROM entities WHERE type = ?",
       [type],
     );
+    return row?.count ?? 0;
+  }
+
+  /** Count all entities regardless of type. */
+  countAll(): number {
+    const row = this.db.get<{ count: number }>("SELECT COUNT(*) AS count FROM entities");
     return row?.count ?? 0;
   }
 
