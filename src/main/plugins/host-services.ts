@@ -107,7 +107,7 @@ function notImplemented(service: string): never {
   throw new Error(`${service} not implemented — arrives in a later phase.`);
 }
 
-function stubService<T>(name: string): T {
+function stubService<T extends object>(name: string): T {
   return new Proxy({} as T, {
     get(_target, prop) {
       if (typeof prop === "symbol") return undefined;
