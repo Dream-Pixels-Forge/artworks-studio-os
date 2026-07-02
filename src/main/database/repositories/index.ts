@@ -16,3 +16,5 @@ export { PromptRepository } from "./prompt-repository.js";
 export type { PromptEntity, CreatePromptInput } from "./prompt-repository.js";
 export { WorkflowRepository } from "./workflow-repository.js";
 export type { Workflow, WorkflowDefinition, WorkflowStep, WorkflowState } from "./workflow-repository.js";
+export { PluginRepository } from "./plugin-repository.js";
+export type { PluginRecord, InstallPluginInput } from "./plugin-repository.js";

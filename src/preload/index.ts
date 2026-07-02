@@ -78,6 +78,12 @@ const artworksApi = {
     },
   },
 
+  /** System dialogs — file open, etc. */
+  dialog: {
+    openFile: (options?: { filters?: Array<{ name: string; extensions: string[] }> }) =>
+      ipcRenderer.invoke("dialog:openFile", options),
+  },
+
   /** App-menu actions — the menu forwards studio actions here. */
   menu: {
     onAction: (cb: (action: MenuAction) => void): (() => void) => {
@@ -224,6 +230,28 @@ const artworksApi = {
       delete: (uuid: string) =>
         ipcRenderer.invoke("production:workflow:delete", uuid),
     },
+  },
+
+  /** Plugin management — install, enable/disable, uninstall, execute commands. */
+  plugin: {
+    list: () =>
+      ipcRenderer.invoke("plugin:list"),
+    get: (uuid: string) =>
+      ipcRenderer.invoke("plugin:get", uuid),
+    install: (input: { manifest: unknown; enabled?: boolean }) =>
+      ipcRenderer.invoke("plugin:install", input),
+    installFromFile: (filePath: string) =>
+      ipcRenderer.invoke("plugin:installFromFile", filePath),
+    enable: (uuid: string) =>
+      ipcRenderer.invoke("plugin:enable", uuid),
+    disable: (uuid: string) =>
+      ipcRenderer.invoke("plugin:disable", uuid),
+    uninstall: (uuid: string) =>
+      ipcRenderer.invoke("plugin:uninstall", uuid),
+    getManifest: (uuid: string) =>
+      ipcRenderer.invoke("plugin:getManifest", uuid),
+    executeCommand: (pluginId: string, commandId: string) =>
+      ipcRenderer.invoke("plugin:executeCommand", pluginId, commandId),
   },
 };
 

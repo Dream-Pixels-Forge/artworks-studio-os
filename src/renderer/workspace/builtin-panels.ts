@@ -26,6 +26,9 @@ import "../panels/story-bible/story-bible-panel.js";
 import "../panels/prompt-composer/prompt-composer-panel.js";
 import "../panels/workflow-builder/workflow-builder-panel.js";
 
+// Phase 9 panels
+import "../panels/plugin-manager/plugin-manager-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",

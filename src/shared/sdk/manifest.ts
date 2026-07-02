@@ -26,6 +26,10 @@ export const ALL_PERMISSIONS: readonly Permission[] = Object.values(Permission);
 export interface PluginCommand {
   readonly id: string;
   readonly title: string;
+  /** Optional description shown in the palette detail. */
+  readonly description?: string;
+  /** Extra keywords to match against (lowercased). */
+  readonly keywords?: readonly string[];
   /**
    * Event types this command responds to. Declarative metadata for
    * discovery and the future marketplace — the plugin is still

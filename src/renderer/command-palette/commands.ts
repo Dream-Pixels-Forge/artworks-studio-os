@@ -44,3 +44,38 @@ export function registerBuiltinCommands(): void {
     },
   });
 }
+
+/** Register commands from enabled plugins into the command palette. */
+export async function registerPluginCommands(): Promise<void> {
+  try {
+    const plugins = await window.artworks.plugin.list();
+    for (const plugin of plugins as Array<{
+      uuid: string;
+      manifest: {
+        id?: string;
+        commands?: Array<{
+          id: string;
+          title: string;
+          description?: string;
+          keywords?: string[];
+          category?: string;
+        }>;
+      };
+    }>) {
+      const commands = plugin.manifest.commands;
+      if (!commands?.length) continue;
+      for (const cmd of commands) {
+        commandRegistry.register({
+          id: `plugin:${plugin.uuid}:${cmd.id}`,
+          title: cmd.title,
+          category: cmd.category ?? plugin.manifest.id ?? plugin.uuid,
+          keywords: cmd.keywords,
+          run: () => window.artworks.plugin.executeCommand(plugin.uuid, cmd.id),
+        });
+      }
+    }
+  } catch (err) {
+    // Plugin command registration is best-effort; don't break the palette.
+    console.warn("Failed to register plugin commands:", err);
+  }
+}

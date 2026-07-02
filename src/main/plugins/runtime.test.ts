@@ -77,7 +77,7 @@ describe("permission gating", () => {
       permissions: ["notification"] as Permission[],
     };
     const trackers = new Set<() => void>();
-    const services = buildHostServices(trackers);
+    const services = buildHostServices(trackers, null);
     const ctx = buildPluginContext(manifest, services);
 
     // project requires 'database' which this plugin lacks.
@@ -96,7 +96,7 @@ describe("permission gating", () => {
       permissions: [] as Permission[],
     };
     const trackers = new Set<() => void>();
-    const services = buildHostServices(trackers);
+    const services = buildHostServices(trackers, null);
     const ctx = buildPluginContext(manifest, services);
 
     // event is always available (core).
@@ -122,7 +122,7 @@ describe("discovery + loading", () => {
 
 describe("PluginRuntime", () => {
   it("loads and activates the example-hello plugin, then tears it down", async () => {
-    const runtime = new PluginRuntime({ builtinDir: BUILTIN_DIR, userDir: join(BUILTIN_DIR, "no-user") });
+    const runtime = new PluginRuntime({ builtinDir: BUILTIN_DIR, userDir: join(BUILTIN_DIR, "no-user") }, null);
     await runtime.start();
     expect(runtime.list().length).toBe(1);
     expect(runtime.list()[0]?.manifest.id).toBe("artworks.example-hello");

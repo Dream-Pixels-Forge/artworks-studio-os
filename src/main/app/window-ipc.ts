@@ -5,7 +5,7 @@
  * maximize, close, query maximized). Each handler resolves the calling
  * window via the event's sender, so every window controls only itself.
  */
-import { BrowserWindow, ipcMain, type WebContents } from "electron";
+import { BrowserWindow, ipcMain, dialog, type WebContents } from "electron";
 import { WINDOW_CHANNELS } from "@shared/window/index.js";
 
 /** Resolve the BrowserWindow that sent an IPC event, if it still exists. */
@@ -32,5 +32,14 @@ export function registerWindowIpc(): void {
 
   ipcMain.on(WINDOW_CHANNELS.close, (event) => {
     senderWindow(event.sender)?.close();
+  });
+
+  ipcMain.handle("dialog:openFile", async (event, options?: { filters?: Array<{ name: string; extensions: string[] }> }) => {
+    const window = senderWindow(event.sender);
+    if (!window) return { canceled: true, filePaths: [] };
+    return dialog.showOpenDialog(window, {
+      properties: ["openFile"],
+      filters: options?.filters ?? [{ name: "Plugins", extensions: ["zip", "tar", "tgz"] }],
+    });
   });
 }

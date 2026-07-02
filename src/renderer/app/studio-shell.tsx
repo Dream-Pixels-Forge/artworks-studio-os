@@ -6,7 +6,7 @@
  * static explorer + main split with a configurable panel arrangement.
  */
 import { useEffect, useState } from "react";
-import { CommandPalette, registerBuiltinCommands, useCommandPalette } from "../command-palette/index.js";
+import { CommandPalette, registerBuiltinCommands, registerPluginCommands, useCommandPalette } from "../command-palette/index.js";
 import { SettingsPanel } from "../panels/settings/index.js";
 import { TitleBar } from "./title-bar/index.js";
 import { WorkspaceLayout } from "../workspace/index.js";
@@ -20,6 +20,7 @@ export function StudioShell() {
 
   useEffect(() => {
     registerBuiltinCommands();
+    void registerPluginCommands();
     const onOpenSettings = (): void => setSettingsOpen(true);
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);

@@ -1,13 +1,17 @@
 /**
  * Host service implementations injected into plugin contexts.
  *
- * Phase 1 ships a REAL EventService (adapter over the existing event bus)
- * and a working NotificationService (logs at the matching level). The rest
- * throw "not implemented" loudly — silent stubs returning fake data would
- * let plugins operate on garbage.
+ * Real implementations for Project, Asset, Graph, Event, and Notification
+ * services backed by existing repositories. AI, File, Media, and Prompt
+ * services remain stubs — they require external integrations that arrive
+ * in later phases.
  */
 import { eventBus } from "@main/core/event-bus.js";
 import { createLogger } from "@main/core/logger.js";
+import type { StudioDatabase } from "@main/database/db.js";
+import { ProjectRepository } from "@main/database/repositories/project-repository.js";
+import { AssetRepository } from "@main/database/repositories/asset-repository.js";
+import { GraphRepository } from "@main/database/repositories/graph-repository.js";
 import type {
   AIService,
   AssetService,
@@ -50,37 +54,68 @@ function createNotificationService(): NotificationService {
   };
 }
 
+/** Real ProjectService backed by ProjectRepository. */
+function createProjectService(db: StudioDatabase): ProjectService {
+  const repo = new ProjectRepository(db);
+  return {
+    create: (input) => Promise.resolve(repo.create(input)),
+    open: (id) => {
+      const project = repo.findByUuid(id);
+      if (!project) throw new Error(`Project not found: ${id}`);
+      return Promise.resolve(project);
+    },
+    active: () => {
+      // Return the most recently updated project as "active"
+      const projects = repo.list();
+      return Promise.resolve(projects[0] ?? null);
+    },
+  };
+}
+
+/** Real AssetService backed by AssetRepository + GraphRepository. */
+function createAssetService(db: StudioDatabase): AssetService {
+  const assetRepo = new AssetRepository(db);
+  const graphRepo = new GraphRepository(db);
+  return {
+    list: (filter) => Promise.resolve(assetRepo.list(filter)),
+    read: (uuid) => {
+      const asset = assetRepo.findByUuid(uuid);
+      if (!asset) throw new Error(`Asset not found: ${uuid}`);
+      return Promise.resolve(asset);
+    },
+    link: (assetUuid, targetUuid, relation) => {
+      graphRepo.connect(assetUuid, targetUuid, relation);
+      return Promise.resolve();
+    },
+  };
+}
+
+/** Real GraphService backed by GraphRepository. */
+function createGraphService(db: StudioDatabase): GraphService {
+  const repo = new GraphRepository(db);
+  return {
+    relationships: (from) => Promise.resolve(repo.relationships(from)),
+    connect: (source, target, type) => {
+      repo.connect(source, target, type);
+      return Promise.resolve();
+    },
+  };
+}
+
 /** A service whose methods all throw "not implemented". */
 function notImplemented(service: string): never {
   throw new Error(`${service} not implemented — arrives in a later phase.`);
 }
 
-function stubProject(): ProjectService {
-  return {
-    create: () => notImplemented("ProjectService.create"),
-    open: () => notImplemented("ProjectService.open"),
-    active: () => notImplemented("ProjectService.active"),
-  };
+function stubService<T extends object>(name: string): T {
+  return new Proxy({} as T, {
+    get(_target, prop) {
+      if (typeof prop === "symbol") return undefined;
+      return () => notImplemented(`${name}.${String(prop)}`);
+    },
+  });
 }
-function stubAsset(): AssetService {
-  return {
-    list: () => notImplemented("AssetService.list"),
-    read: () => notImplemented("AssetService.read"),
-    link: () => notImplemented("AssetService.link"),
-  };
-}
-function stubGraph(): GraphService {
-  return {
-    relationships: () => notImplemented("GraphService.relationships"),
-    connect: () => notImplemented("GraphService.connect"),
-  };
-}
-function stubPrompt(): PromptService {
-  return {
-    build: () => notImplemented("PromptService.build"),
-    history: () => notImplemented("PromptService.history"),
-  };
-}
+
 function stubAi(): AIService {
   return {
     providers: () => notImplemented("AIService.providers"),
@@ -100,6 +135,12 @@ function stubMedia(): MediaService {
     transcode: () => notImplemented("MediaService.transcode"),
   };
 }
+function stubPrompt(): PromptService {
+  return {
+    build: () => notImplemented("PromptService.build"),
+    history: () => notImplemented("PromptService.history"),
+  };
+}
 
 export interface HostServices {
   project: ProjectService;
@@ -114,16 +155,19 @@ export interface HostServices {
 }
 
 /**
- * Build the set of host services. The event-service unsubscribe trackers
- * let the runtime tear down a plugin's subscriptions on deactivate.
+ * Build the set of host services. When a database is provided, Project,
+ * Asset, and Graph services use real repositories. The event-service
+ * unsubscribe trackers let the runtime tear down a plugin's subscriptions
+ * on deactivate.
  */
 export function buildHostServices(
   unsubscribeTrackers: Set<() => void>,
+  db?: StudioDatabase | null,
 ): HostServices {
   return {
-    project: stubProject(),
-    asset: stubAsset(),
-    graph: stubGraph(),
+    project: db ? createProjectService(db) : stubService("ProjectService"),
+    asset: db ? createAssetService(db) : stubService("AssetService"),
+    graph: db ? createGraphService(db) : stubService("GraphService"),
     prompt: stubPrompt(),
     ai: stubAi(),
     file: stubFile(),
