@@ -153,11 +153,17 @@ palette commands for department creation, studio stats, and panel
 opening. Schema migration v4 with departments, department_members,
 approvals, and reviews tables.
 
+Phase 13 (AI Production Teams) — complete.
+
+Agent, AgentTask, and AgentMessage repositories with CRUD, status
+management, and stats. 25+ IPC handlers for agent lifecycle, task
+workflow, and message tracking. Preload bridge with agent, agentTask,
+agentMessage APIs. Agent Teams panel with overview, agent management,
+task management, and message history. Command palette commands for
+agent creation, listing, and stats. Schema migration v5 with ai_agents,
+agent_tasks, and agent_messages tables.
+
 Upcoming Work
-
-Phase 13 — AI Production Teams
-
-Phase 13 — AI Production Teams
 
 Phase 14 — Node-Based Production
 

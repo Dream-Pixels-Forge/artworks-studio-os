@@ -25,6 +25,9 @@ import {
   DepartmentRepository,
   ApprovalRepository,
   ReviewRepository,
+  AgentRepository,
+  AgentTaskRepository,
+  AgentMessageRepository,
   type CreateProjectInput,
   type CreateAssetInput,
   type CreateDocumentInput,
@@ -47,6 +50,9 @@ import {
   type CreateApprovalInput,
   type CreateReviewInput,
   type ReviewStatus,
+  type CreateAgentInput,
+  type CreateTaskInput,
+  type CreateMessageInput,
 } from "@main/database/repositories/index.js";
 import type {
   ProjectDto,
@@ -79,6 +85,9 @@ let commentRepo: CommentRepository;
 let departmentRepo: DepartmentRepository;
 let approvalRepo: ApprovalRepository;
 let reviewRepo: ReviewRepository;
+let agentRepo: AgentRepository;
+let agentTaskRepo: AgentTaskRepository;
+let agentMsgRepo: AgentMessageRepository;
 
 /** Register all production IPC handlers. Call once on app startup. */
 export function registerProductionIpc(db: StudioDatabase): void {
@@ -98,6 +107,9 @@ export function registerProductionIpc(db: StudioDatabase): void {
   departmentRepo = new DepartmentRepository(db);
   approvalRepo = new ApprovalRepository(db);
   reviewRepo = new ReviewRepository(db);
+  agentRepo = new AgentRepository(db);
+  agentTaskRepo = new AgentTaskRepository(db);
+  agentMsgRepo = new AgentMessageRepository(db);
 
   // --- Projects ---
   ipcMain.handle("production:project:list", () => projectRepo.list() as ProjectDto[]);
@@ -403,4 +415,64 @@ export function registerProductionIpc(db: StudioDatabase): void {
   ipcMain.handle("production:review:byEntity", (_e, entityUuid: string) =>
     reviewRepo.listByEntity(entityUuid));
   ipcMain.handle("production:review:stats", () => reviewRepo.stats());
+
+  // --- AI Agents (Phase 13) ---
+  ipcMain.handle("production:agent:list", () => agentRepo.list());
+  ipcMain.handle("production:agent:create", (_e, input: CreateAgentInput) => {
+    if (!input.name?.trim()) throw new Error("Agent name is required");
+    if (!input.role?.trim()) throw new Error("Agent role is required");
+    return agentRepo.create(input);
+  });
+  ipcMain.handle("production:agent:get", (_e, uuid: string) => agentRepo.findByUuid(uuid));
+  ipcMain.handle("production:agent:getByRole", (_e, role: string) => agentRepo.findByRole(role));
+  ipcMain.handle("production:agent:update", (_e, uuid: string, input: Partial<CreateAgentInput>) =>
+    agentRepo.update(uuid, input));
+  ipcMain.handle("production:agent:updateStatus", (_e, uuid: string, status: "idle" | "busy" | "paused" | "offline") =>
+    agentRepo.updateStatus(uuid, status));
+  ipcMain.handle("production:agent:delete", (_e, uuid: string) => agentRepo.delete(uuid));
+  ipcMain.handle("production:agent:stats", () => agentRepo.stats());
+
+  // --- Agent Tasks (Phase 13) ---
+  ipcMain.handle("production:agentTask:list", (_e, filters?: { status?: string; agentId?: string }) => {
+    if (filters?.agentId) return agentTaskRepo.listByAgent(filters.agentId);
+    if (filters?.status) return agentTaskRepo.listByStatus(filters.status as "pending" | "in_progress" | "completed" | "failed" | "cancelled");
+    return agentTaskRepo.list();
+  });
+  ipcMain.handle("production:agentTask:create", (_e, input: CreateTaskInput) => {
+    if (!input.agentId?.trim()) throw new Error("Agent ID is required");
+    if (!input.title?.trim()) throw new Error("Task title is required");
+    return agentTaskRepo.create(input);
+  });
+  ipcMain.handle("production:agentTask:get", (_e, uuid: string) => agentTaskRepo.findByUuid(uuid));
+  ipcMain.handle("production:agentTask:update", (_e, uuid: string, input: Partial<CreateTaskInput>) =>
+    agentTaskRepo.update(uuid, input));
+  ipcMain.handle("production:agentTask:start", (_e, uuid: string) => agentTaskRepo.start(uuid));
+  ipcMain.handle("production:agentTask:complete", (_e, uuid: string, output: Record<string, unknown>) =>
+    agentTaskRepo.complete(uuid, output));
+  ipcMain.handle("production:agentTask:fail", (_e, uuid: string, reason: string) =>
+    agentTaskRepo.fail(uuid, reason));
+  ipcMain.handle("production:agentTask:cancel", (_e, uuid: string) => agentTaskRepo.cancel(uuid));
+  ipcMain.handle("production:agentTask:delete", (_e, uuid: string) => agentTaskRepo.delete(uuid));
+  ipcMain.handle("production:agentTask:stats", () => agentTaskRepo.stats());
+
+  // --- Agent Messages (Phase 13) ---
+  ipcMain.handle("production:agentMessage:list", (_e, filters?: { agentId?: string; taskId?: string; limit?: number }) => {
+    if (filters?.taskId) return agentMsgRepo.listByTask(filters.taskId);
+    if (filters?.agentId) return agentMsgRepo.listByAgent(filters.agentId, filters.limit);
+    return agentMsgRepo.list(filters?.limit);
+  });
+  ipcMain.handle("production:agentMessage:create", (_e, input: CreateMessageInput) => {
+    if (!input.agentId?.trim()) throw new Error("Agent ID is required");
+    if (!input.content?.trim()) throw new Error("Message content is required");
+    return agentMsgRepo.create(input);
+  });
+  ipcMain.handle("production:agentMessage:get", (_e, uuid: string) => agentMsgRepo.findByUuid(uuid));
+  ipcMain.handle("production:agentMessage:deleteByAgent", (_e, agentId: string) =>
+    agentMsgRepo.deleteByAgent(agentId));
+  ipcMain.handle("production:agentMessage:deleteByTask", (_e, taskId: string) =>
+    agentMsgRepo.deleteByTask(taskId));
+  ipcMain.handle("production:agentMessage:stats", (_e, agentId: string) => ({
+    count: agentMsgRepo.countByAgent(agentId),
+    tokens: agentMsgRepo.tokensByAgent(agentId),
+  }));
 }

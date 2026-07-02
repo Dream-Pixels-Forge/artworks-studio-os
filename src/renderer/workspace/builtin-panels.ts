@@ -38,6 +38,9 @@ import "../panels/collaboration/collaboration-panel.js";
 // Phase 12 panels
 import "../panels/studio/studio-panel.js";
 
+// Phase 13 panels
+import "../panels/agent-teams/agent-teams-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",

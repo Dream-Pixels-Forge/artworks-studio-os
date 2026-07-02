@@ -201,6 +201,57 @@ export function registerBuiltinCommands(): void {
       );
     },
   });
+
+  // --- Agent Teams commands (Phase 13) ---
+  commandRegistry.register({
+    id: "agent:create",
+    title: "Create AI Agent",
+    category: "AI Teams",
+    keywords: ["agent", "create", "ai"],
+    run: async () => {
+      const agents = await window.artworks.production.agent.list();
+      console.log(`Current agents: ${(agents as Array<{ name: string }>).map((a) => a.name).join(", ") || "none"}`);
+    },
+  });
+
+  commandRegistry.register({
+    id: "agent:list",
+    title: "List AI Agents",
+    category: "AI Teams",
+    keywords: ["agent", "list", "ai"],
+    run: async () => {
+      const [agents, stats] = await Promise.all([
+        window.artworks.production.agent.list(),
+        window.artworks.production.agent.stats(),
+      ]);
+      const agentList = agents as Array<{ name: string; role: string; status: string }>;
+      const s = stats as { total: number; idle: number; busy: number };
+      console.log(
+        `Agents: ${agentList.length} total, ` +
+        `Idle: ${s.idle}, Busy: ${s.busy}\n` +
+        agentList.map((a) => `  ${a.name} (${a.role}) — ${a.status}`).join("\n")
+      );
+    },
+  });
+
+  commandRegistry.register({
+    id: "agent:stats",
+    title: "AI Teams Stats",
+    category: "AI Teams",
+    keywords: ["agent", "stats", "ai"],
+    run: async () => {
+      const [agentStats, taskStats] = await Promise.all([
+        window.artworks.production.agent.stats(),
+        window.artworks.production.agentTask.stats(),
+      ]);
+      const a = agentStats as { total: number; idle: number; busy: number };
+      const t = taskStats as { total: number; pending: number; inProgress: number; completed: number };
+      console.log(
+        `Agents: ${a.total} total, ${a.idle} idle, ${a.busy} busy\n` +
+        `Tasks: ${t.total} total, ${t.pending} pending, ${t.inProgress} in progress, ${t.completed} completed`
+      );
+    },
+  });
 }
 
 /** Register commands from enabled plugins into the command palette. */

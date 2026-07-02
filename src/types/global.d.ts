@@ -178,6 +178,37 @@ interface ArtworksApi {
       byEntity: (entityUuid: string) => Promise<unknown>;
       stats: () => Promise<unknown>;
     };
+
+    agent: {
+      list: () => Promise<unknown>;
+      create: (input: { name: string; role: string; systemPrompt?: string; model?: string; avatar?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      getByRole: (role: string) => Promise<unknown>;
+      update: (uuid: string, input: { name?: string; role?: string; systemPrompt?: string; model?: string; avatar?: string }) => Promise<unknown>;
+      updateStatus: (uuid: string, status: "idle" | "busy" | "paused" | "offline") => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+    agentTask: {
+      list: (filters?: { status?: string; agentId?: string }) => Promise<unknown>;
+      create: (input: { agentId: string; title: string; description?: string; priority?: string; input?: Record<string, unknown>; dueDate?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      update: (uuid: string, input: { title?: string; description?: string; priority?: string; input?: Record<string, unknown>; dueDate?: string }) => Promise<unknown>;
+      start: (uuid: string) => Promise<unknown>;
+      complete: (uuid: string, output: Record<string, unknown>) => Promise<unknown>;
+      fail: (uuid: string, reason: string) => Promise<unknown>;
+      cancel: (uuid: string) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+    agentMessage: {
+      list: (filters?: { agentId?: string; taskId?: string; limit?: number }) => Promise<unknown>;
+      create: (input: { agentId: string; taskId?: string; role: string; content: string; tokensUsed?: number; model?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      deleteByAgent: (agentId: string) => Promise<unknown>;
+      deleteByTask: (taskId: string) => Promise<unknown>;
+      stats: (agentId: string) => Promise<unknown>;
+    };
   };
 
   plugin: {

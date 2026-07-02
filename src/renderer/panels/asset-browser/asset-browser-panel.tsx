@@ -4,7 +4,7 @@
  * Lists assets from the database with a type filter. Supports
  * creating and deleting assets. Uses the production IPC bridge.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { panelRegistry } from "../../workspace/registry.js";
 
 interface Asset {
@@ -24,16 +24,16 @@ export function AssetBrowserPanel() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [filter, setFilter] = useState<AssetFilter>("all");
 
-  useEffect(() => {
-    refresh();
-  }, [filter]);
-
-  async function refresh() {
+  const refresh = useCallback(async () => {
     const list = await window.artworks.production.asset.list(
       filter === "all" ? undefined : { type: filter },
     );
     setAssets(list as Asset[]);
-  }
+  }, [filter]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   async function remove(uuid: string) {
     await window.artworks.production.asset.delete(uuid);

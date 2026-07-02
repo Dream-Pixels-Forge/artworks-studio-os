@@ -350,6 +350,62 @@ const artworksApi = {
       stats: () =>
         ipcRenderer.invoke("production:review:stats"),
     },
+
+    /** AI Production Teams — agents, tasks, messages. */
+    agent: {
+      list: () =>
+        ipcRenderer.invoke("production:agent:list"),
+      create: (input: { name: string; role: string; systemPrompt?: string; model?: string; avatar?: string }) =>
+        ipcRenderer.invoke("production:agent:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:agent:get", uuid),
+      getByRole: (role: string) =>
+        ipcRenderer.invoke("production:agent:getByRole", role),
+      update: (uuid: string, input: { name?: string; role?: string; systemPrompt?: string; model?: string; avatar?: string }) =>
+        ipcRenderer.invoke("production:agent:update", uuid, input),
+      updateStatus: (uuid: string, status: "idle" | "busy" | "paused" | "offline") =>
+        ipcRenderer.invoke("production:agent:updateStatus", uuid, status),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:agent:delete", uuid),
+      stats: () =>
+        ipcRenderer.invoke("production:agent:stats"),
+    },
+    agentTask: {
+      list: (filters?: { status?: string; agentId?: string }) =>
+        ipcRenderer.invoke("production:agentTask:list", filters),
+      create: (input: { agentId: string; title: string; description?: string; priority?: string; input?: Record<string, unknown>; dueDate?: string }) =>
+        ipcRenderer.invoke("production:agentTask:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:agentTask:get", uuid),
+      update: (uuid: string, input: { title?: string; description?: string; priority?: string; input?: Record<string, unknown>; dueDate?: string }) =>
+        ipcRenderer.invoke("production:agentTask:update", uuid, input),
+      start: (uuid: string) =>
+        ipcRenderer.invoke("production:agentTask:start", uuid),
+      complete: (uuid: string, output: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:agentTask:complete", uuid, output),
+      fail: (uuid: string, reason: string) =>
+        ipcRenderer.invoke("production:agentTask:fail", uuid, reason),
+      cancel: (uuid: string) =>
+        ipcRenderer.invoke("production:agentTask:cancel", uuid),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:agentTask:delete", uuid),
+      stats: () =>
+        ipcRenderer.invoke("production:agentTask:stats"),
+    },
+    agentMessage: {
+      list: (filters?: { agentId?: string; taskId?: string; limit?: number }) =>
+        ipcRenderer.invoke("production:agentMessage:list", filters),
+      create: (input: { agentId: string; taskId?: string; role: string; content: string; tokensUsed?: number; model?: string }) =>
+        ipcRenderer.invoke("production:agentMessage:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:agentMessage:get", uuid),
+      deleteByAgent: (agentId: string) =>
+        ipcRenderer.invoke("production:agentMessage:deleteByAgent", agentId),
+      deleteByTask: (taskId: string) =>
+        ipcRenderer.invoke("production:agentMessage:deleteByTask", taskId),
+      stats: (agentId: string) =>
+        ipcRenderer.invoke("production:agentMessage:stats", agentId),
+    },
   },
 
   /** Plugin management — install, enable/disable, uninstall, execute commands. */

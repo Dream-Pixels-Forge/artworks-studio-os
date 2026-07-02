@@ -35,13 +35,12 @@ export function VersionHistoryPanel() {
       setVersions([]);
       return;
     }
+    async function load() {
+      const list = await window.artworks.production.version.list(entityUuid);
+      setVersions(list as VersionSnapshot[]);
+    }
     void load();
   }, [entityUuid]);
-
-  async function load() {
-    const list = await window.artworks.production.version.list(entityUuid);
-    setVersions(list as VersionSnapshot[]);
-  }
 
   return (
     <div className="version-panel">
