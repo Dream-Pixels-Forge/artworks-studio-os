@@ -926,7 +926,7 @@ export function NodeProductionPanel() {
 
   // ─── Edge double-click handler ────────────────────────────────────────────
 
-  const onEdgeDoubleClick = useCallback((_: MouseEvent, edge: Edge) => {
+  const onEdgeDoubleClick = useCallback((_: unknown, edge: Edge) => {
     setEditingEdge(edge);
   }, []);
 

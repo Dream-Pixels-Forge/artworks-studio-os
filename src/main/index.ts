@@ -19,6 +19,7 @@ import { ThemeService, registerThemeIpc, SettingsService, registerSettingsIpc, r
 import { registerProductionIpc } from "@main/services/production-ipc.js";
 import { registerPluginIpc } from "@main/services/plugin-ipc.js";
 import { registerMarketplaceIpc } from "@main/services/marketplace-ipc.js";
+import { registerEnterpriseIpc } from "@main/services/enterprise-ipc.js";
 import { registerExplorerHandlers } from "@main/integrations/production-explorer/ipc-handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -82,6 +83,9 @@ app.whenReady().then(async () => {
 
   // Register marketplace IPC (browse, search, install, rate, publish).
   registerMarketplaceIpc(database);
+
+  // Register enterprise IPC (teams, roles, permissions, audit log, licenses).
+  registerEnterpriseIpc(database);
 
   // Window controls (title bar) + the main window with persisted state.
   registerWindowIpc();
