@@ -197,7 +197,7 @@ export function registerProductionIpc(db: StudioDatabase): void {
   ipcMain.handle("production:conversation:create", async (_e, input: {
     name: string; projectUuid?: string; provider?: string; model?: string; messages?: ConversationMessage[];
   }) => {
-    try { return convRepo.create(input) as Conversation; } catch (err) { log("error", "ipc", "conversation:create failed", err); throw err; }
+    try { return convRepo.create(input) as Conversation; } catch (err) { log.error("conversation:create failed", err); throw err; }
   });
   ipcMain.handle("production:conversation:get", (_e, uuid: string) =>
     convRepo.findByUuid(uuid) as Conversation | undefined);
@@ -211,7 +211,7 @@ export function registerProductionIpc(db: StudioDatabase): void {
   ipcMain.handle("production:prompt:create", async (_e, input: {
     name: string; projectUuid?: string; provider?: string; model?: string; template: string;
   }) => {
-    try { return promptRepo.create(input) as PromptEntity; } catch (err) { log("error", "ipc", "prompt:create failed", err); throw err; }
+    try { return promptRepo.create(input) as PromptEntity; } catch (err) { log.error("prompt:create failed", err); throw err; }
   });
   ipcMain.handle("production:prompt:get", (_e, uuid: string) =>
     promptRepo.findByUuid(uuid) as PromptEntity | undefined);
@@ -227,7 +227,7 @@ export function registerProductionIpc(db: StudioDatabase): void {
   ipcMain.handle("production:workflow:create", async (_e, input: {
     name: string; projectUuid?: string; definition?: WorkflowDefinition;
   }) => {
-    try { return wfRepo.create(input) as Workflow; } catch (err) { log("error", "ipc", "workflow:create failed", err); throw err; }
+    try { return wfRepo.create(input) as Workflow; } catch (err) { log.error("workflow:create failed", err); throw err; }
   });
   ipcMain.handle("production:workflow:get", (_e, uuid: string) =>
     wfRepo.findByUuid(uuid) as Workflow | undefined);
