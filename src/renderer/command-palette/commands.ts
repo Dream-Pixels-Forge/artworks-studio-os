@@ -143,6 +143,64 @@ export function registerBuiltinCommands(): void {
       window.alert(`Recent Activity:\n${list || "None"}`);
     },
   });
+
+  // --- Studio Platform commands (Phase 12) ---
+  commandRegistry.register({
+    id: "studio:open-panel",
+    title: "Open Studio Panel",
+    category: "Studio",
+    keywords: ["studio", "departments", "approvals", "reviews"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "studio" } }));
+    },
+  });
+
+  commandRegistry.register({
+    id: "studio:create-department",
+    title: "Create Department",
+    category: "Studio",
+    keywords: ["department", "team", "add"],
+    run: async () => {
+      const name = window.prompt("Department name:");
+      if (!name?.trim()) return;
+      await window.artworks.production.department.create({ name: name.trim() });
+    },
+  });
+
+  commandRegistry.register({
+    id: "studio:list-departments",
+    title: "List Departments",
+    category: "Studio",
+    keywords: ["departments", "teams"],
+    run: async () => {
+      const depts = await window.artworks.production.department.list() as Array<{
+        uuid: string; name: string; description: string;
+      }>;
+      const list = depts.map((d) => `${d.name}${d.description ? ` - ${d.description}` : ""}`).join("\n");
+      window.alert(`Departments:\n${list || "None"}`);
+    },
+  });
+
+  commandRegistry.register({
+    id: "studio:show-stats",
+    title: "Show Studio Stats",
+    category: "Studio",
+    keywords: ["stats", "analytics", "overview"],
+    run: async () => {
+      const [deptStats, approvalStats, reviewStats] = await Promise.all([
+        window.artworks.production.department.stats() as Promise<{ total: number; members: number }>,
+        window.artworks.production.approval.stats() as Promise<{ total: number; pending: number; approved: number; rejected: number }>,
+        window.artworks.production.review.stats() as Promise<{ total: number; pending: number; inProgress: number; completed: number; avgRating: number }>,
+      ]);
+      window.alert(
+        `Studio Stats:\n` +
+        `Departments: ${deptStats.total} (${deptStats.members} members)\n` +
+        `Approvals: ${approvalStats.total} total (${approvalStats.pending} pending)\n` +
+        `Reviews: ${reviewStats.total} total (${reviewStats.pending} pending)\n` +
+        `Avg Rating: ${reviewStats.avgRating.toFixed(1)}`
+      );
+    },
+  });
 }
 
 /** Register commands from enabled plugins into the command palette. */

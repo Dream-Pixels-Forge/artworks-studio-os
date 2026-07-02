@@ -294,6 +294,62 @@ const artworksApi = {
       countUnresolved: (entityUuid: string) =>
         ipcRenderer.invoke("production:comment:countUnresolved", entityUuid),
     },
+
+    /** Studio Platform — departments, approvals, reviews. */
+    department: {
+      list: () =>
+        ipcRenderer.invoke("production:department:list"),
+      create: (input: { name: string; description?: string; leadUuid?: string }) =>
+        ipcRenderer.invoke("production:department:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:department:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:department:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:department:delete", uuid),
+      members: (departmentUuid: string) =>
+        ipcRenderer.invoke("production:department:members", departmentUuid),
+      addMember: (input: { departmentUuid: string; userUuid: string; role?: "lead" | "member" }) =>
+        ipcRenderer.invoke("production:department:addMember", input),
+      removeMember: (departmentUuid: string, userUuid: string) =>
+        ipcRenderer.invoke("production:department:removeMember", departmentUuid, userUuid),
+      userDepartments: (userUuid: string) =>
+        ipcRenderer.invoke("production:department:userDepartments", userUuid),
+      stats: () =>
+        ipcRenderer.invoke("production:department:stats"),
+    },
+    approval: {
+      list: (filters?: { status?: string; approverUuid?: string; requesterUuid?: string }) =>
+        ipcRenderer.invoke("production:approval:list", filters),
+      create: (input: { entityUuid: string; requesterUuid: string; approverUuid: string; notes?: string }) =>
+        ipcRenderer.invoke("production:approval:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:approval:get", uuid),
+      updateStatus: (uuid: string, status: string, notes?: string) =>
+        ipcRenderer.invoke("production:approval:updateStatus", uuid, status, notes),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:approval:delete", uuid),
+      byEntity: (entityUuid: string) =>
+        ipcRenderer.invoke("production:approval:byEntity", entityUuid),
+      stats: () =>
+        ipcRenderer.invoke("production:approval:stats"),
+    },
+    review: {
+      list: (filters?: { status?: string; reviewerUuid?: string }) =>
+        ipcRenderer.invoke("production:review:list", filters),
+      create: (input: { entityUuid: string; reviewerUuid: string }) =>
+        ipcRenderer.invoke("production:review:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:review:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:review:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:review:delete", uuid),
+      byEntity: (entityUuid: string) =>
+        ipcRenderer.invoke("production:review:byEntity", entityUuid),
+      stats: () =>
+        ipcRenderer.invoke("production:review:stats"),
+    },
   },
 
   /** Plugin management — install, enable/disable, uninstall, execute commands. */

@@ -38,6 +38,8 @@ Plugin Runtime
 
 Timeline Engine
 
+Studio Platform
+
 Current Design Principles
 
 Story First
@@ -142,9 +144,18 @@ activity feed, and comments. Command palette commands for user
 management and activity viewing. Schema migration v3 with users,
 activity_log, and comments tables.
 
+Phase 12 (Studio Platform) — complete.
+
+Department, Approval, and Review repositories with CRUD and queries.
+IPC handlers, preload bridge, Studio Panel with department management,
+approval workflow, review pipeline, and analytics overview. Command
+palette commands for department creation, studio stats, and panel
+opening. Schema migration v4 with departments, department_members,
+approvals, and reviews tables.
+
 Upcoming Work
 
-Phase 12 — Studio Platform
+Phase 13 — AI Production Teams
 
 Phase 13 — AI Production Teams
 

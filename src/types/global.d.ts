@@ -147,6 +147,37 @@ interface ArtworksApi {
       countByEntity: (entityUuid: string) => Promise<unknown>;
       countUnresolved: (entityUuid: string) => Promise<unknown>;
     };
+
+    department: {
+      list: () => Promise<unknown>;
+      create: (input: { name: string; description?: string; leadUuid?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      update: (uuid: string, updates: Record<string, unknown>) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      members: (departmentUuid: string) => Promise<unknown>;
+      addMember: (input: { departmentUuid: string; userUuid: string; role?: string }) => Promise<unknown>;
+      removeMember: (departmentUuid: string, userUuid: string) => Promise<unknown>;
+      userDepartments: (userUuid: string) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+    approval: {
+      list: (filters?: { status?: string; approverUuid?: string; requesterUuid?: string }) => Promise<unknown>;
+      create: (input: { entityUuid: string; requesterUuid: string; approverUuid: string; notes?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      updateStatus: (uuid: string, status: string, notes?: string) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      byEntity: (entityUuid: string) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+    review: {
+      list: (filters?: { status?: string; reviewerUuid?: string }) => Promise<unknown>;
+      create: (input: { entityUuid: string; reviewerUuid: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      update: (uuid: string, updates: Record<string, unknown>) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      byEntity: (entityUuid: string) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
   };
 
   plugin: {
