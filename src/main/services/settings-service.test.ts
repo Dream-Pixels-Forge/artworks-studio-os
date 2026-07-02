@@ -7,9 +7,9 @@
  * is pinned here so a breaking change to the persisted file is caught.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { isPreferences } from "./settings-service.js";
 
 let home: string;
@@ -64,6 +64,7 @@ describe("settings persistence contract", () => {
     const service = new SettingsService();
 
     // Write a corrupt preferences file at the resolved path.
+    await mkdir(dirname(service.path), { recursive: true });
     await writeFile(service.path, "{ not valid json");
     const state = await service.init();
     expect(state.preferences).toEqual({});
