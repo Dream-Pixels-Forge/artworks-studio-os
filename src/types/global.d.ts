@@ -122,6 +122,31 @@ interface ArtworksApi {
       dependents: (uuid: string) => Promise<unknown>;
       stats: (projectUuid?: string) => Promise<unknown>;
     };
+
+    user: {
+      list: () => Promise<unknown>;
+      listActive: () => Promise<unknown>;
+      create: (input: { displayName: string; email?: string; avatarUrl?: string; role?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      update: (uuid: string, updates: Record<string, unknown>) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      stats: () => Promise<unknown>;
+    };
+    activity: {
+      list: (filter?: { userUuid?: string; entityUuid?: string; entityType?: string; action?: string; since?: string }, limit?: number) => Promise<unknown>;
+      log: (input: { userUuid?: string; entityUuid?: string; action: string; entityType: string; details?: Record<string, unknown> }) => Promise<unknown>;
+      count: (filter?: { userUuid?: string; entityType?: string; action?: string }) => Promise<unknown>;
+    };
+    comment: {
+      listByEntity: (entityUuid: string) => Promise<unknown>;
+      listRecent: (limit?: number) => Promise<unknown>;
+      create: (input: { entityUuid: string; body: string; userUuid?: string; parentUuid?: string }) => Promise<unknown>;
+      get: (uuid: string) => Promise<unknown>;
+      update: (uuid: string, updates: Record<string, unknown>) => Promise<unknown>;
+      delete: (uuid: string) => Promise<unknown>;
+      countByEntity: (entityUuid: string) => Promise<unknown>;
+      countUnresolved: (entityUuid: string) => Promise<unknown>;
+    };
   };
 
   plugin: {

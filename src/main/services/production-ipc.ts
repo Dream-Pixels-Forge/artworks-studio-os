@@ -19,6 +19,9 @@ import {
   PromptRepository,
   WorkflowRepository,
   TimelineRepository,
+  UserRepository,
+  ActivityRepository,
+  CommentRepository,
   type CreateProjectInput,
   type CreateAssetInput,
   type CreateDocumentInput,
@@ -32,6 +35,10 @@ import {
   type WorkflowState,
   type CreateTimelineInput,
   type TimelineType,
+  type CreateUserInput,
+  type LogActivityInput,
+  type ActivityFilter,
+  type CreateCommentInput,
 } from "@main/database/repositories/index.js";
 import type {
   ProjectDto,
@@ -58,6 +65,9 @@ let convRepo: ConversationRepository;
 let promptRepo: PromptRepository;
 let wfRepo: WorkflowRepository;
 let tlRepo: TimelineRepository;
+let userRepo: UserRepository;
+let activityRepo: ActivityRepository;
+let commentRepo: CommentRepository;
 
 /** Register all production IPC handlers. Call once on app startup. */
 export function registerProductionIpc(db: StudioDatabase): void {
@@ -71,6 +81,9 @@ export function registerProductionIpc(db: StudioDatabase): void {
   promptRepo = new PromptRepository(db);
   wfRepo = new WorkflowRepository(db);
   tlRepo = new TimelineRepository(db);
+  userRepo = new UserRepository(db);
+  activityRepo = new ActivityRepository(db);
+  commentRepo = new CommentRepository(db);
 
   // --- Projects ---
   ipcMain.handle("production:project:list", () => projectRepo.list() as ProjectDto[]);
@@ -262,4 +275,51 @@ export function registerProductionIpc(db: StudioDatabase): void {
     tlRepo.dependents(uuid));
   ipcMain.handle("production:timeline:stats", (_e, projectUuid?: string) =>
     tlRepo.stats(projectUuid));
+
+  // --- Users (Collaboration) ---
+  ipcMain.handle("production:user:list", () => userRepo.list());
+  ipcMain.handle("production:user:listActive", () => userRepo.listActive());
+  ipcMain.handle("production:user:create", (_e, input: CreateUserInput) => {
+    if (!input.displayName?.trim()) throw new Error("User display name is required");
+    return userRepo.create(input);
+  });
+  ipcMain.handle("production:user:get", (_e, uuid: string) =>
+    userRepo.findByUuid(uuid));
+  ipcMain.handle("production:user:update", (_e, uuid: string, updates: Record<string, unknown>) =>
+    userRepo.update(uuid, updates as Parameters<typeof userRepo.update>[1]));
+  ipcMain.handle("production:user:delete", (_e, uuid: string) =>
+    userRepo.delete(uuid));
+  ipcMain.handle("production:user:stats", () => userRepo.stats());
+
+  // --- Activity Log (Collaboration) ---
+  ipcMain.handle("production:activity:list", (_e, filter?: ActivityFilter, limit?: number) =>
+    activityRepo.list(filter, limit));
+  ipcMain.handle("production:activity:log", (_e, input: LogActivityInput) => {
+    if (!input.action?.trim()) throw new Error("Activity action is required");
+    if (!input.entityType?.trim()) throw new Error("Activity entity type is required");
+    return activityRepo.log(input);
+  });
+  ipcMain.handle("production:activity:count", (_e, filter?: ActivityFilter) =>
+    activityRepo.count(filter));
+
+  // --- Comments (Collaboration) ---
+  ipcMain.handle("production:comment:listByEntity", (_e, entityUuid: string) =>
+    commentRepo.listByEntity(entityUuid));
+  ipcMain.handle("production:comment:listRecent", (_e, limit?: number) =>
+    commentRepo.listRecent(limit));
+  ipcMain.handle("production:comment:create", (_e, input: CreateCommentInput) => {
+    if (!input.entityUuid?.trim()) throw new Error("Comment entity UUID is required");
+    if (!input.body?.trim()) throw new Error("Comment body is required");
+    return commentRepo.create(input);
+  });
+  ipcMain.handle("production:comment:get", (_e, uuid: string) =>
+    commentRepo.findByUuid(uuid));
+  ipcMain.handle("production:comment:update", (_e, uuid: string, updates: Record<string, unknown>) =>
+    commentRepo.update(uuid, updates as Parameters<typeof commentRepo.update>[1]));
+  ipcMain.handle("production:comment:delete", (_e, uuid: string) =>
+    commentRepo.delete(uuid));
+  ipcMain.handle("production:comment:countByEntity", (_e, entityUuid: string) =>
+    commentRepo.countByEntity(entityUuid));
+  ipcMain.handle("production:comment:countUnresolved", (_e, entityUuid: string) =>
+    commentRepo.countUnresolved(entityUuid));
 }

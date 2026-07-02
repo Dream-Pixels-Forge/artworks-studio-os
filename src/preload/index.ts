@@ -250,6 +250,50 @@ const artworksApi = {
       stats: (projectUuid?: string) =>
         ipcRenderer.invoke("production:timeline:stats", projectUuid),
     },
+
+    /** Collaboration — users, activity feed, comments. */
+    user: {
+      list: () =>
+        ipcRenderer.invoke("production:user:list"),
+      listActive: () =>
+        ipcRenderer.invoke("production:user:listActive"),
+      create: (input: { displayName: string; email?: string; avatarUrl?: string; role?: string }) =>
+        ipcRenderer.invoke("production:user:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:user:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:user:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:user:delete", uuid),
+      stats: () =>
+        ipcRenderer.invoke("production:user:stats"),
+    },
+    activity: {
+      list: (filter?: { userUuid?: string; entityUuid?: string; entityType?: string; action?: string; since?: string }, limit?: number) =>
+        ipcRenderer.invoke("production:activity:list", filter, limit),
+      log: (input: { userUuid?: string; entityUuid?: string; action: string; entityType: string; details?: Record<string, unknown> }) =>
+        ipcRenderer.invoke("production:activity:log", input),
+      count: (filter?: { userUuid?: string; entityType?: string; action?: string }) =>
+        ipcRenderer.invoke("production:activity:count", filter),
+    },
+    comment: {
+      listByEntity: (entityUuid: string) =>
+        ipcRenderer.invoke("production:comment:listByEntity", entityUuid),
+      listRecent: (limit?: number) =>
+        ipcRenderer.invoke("production:comment:listRecent", limit),
+      create: (input: { entityUuid: string; body: string; userUuid?: string; parentUuid?: string }) =>
+        ipcRenderer.invoke("production:comment:create", input),
+      get: (uuid: string) =>
+        ipcRenderer.invoke("production:comment:get", uuid),
+      update: (uuid: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke("production:comment:update", uuid, updates),
+      delete: (uuid: string) =>
+        ipcRenderer.invoke("production:comment:delete", uuid),
+      countByEntity: (entityUuid: string) =>
+        ipcRenderer.invoke("production:comment:countByEntity", entityUuid),
+      countUnresolved: (entityUuid: string) =>
+        ipcRenderer.invoke("production:comment:countUnresolved", entityUuid),
+    },
   },
 
   /** Plugin management — install, enable/disable, uninstall, execute commands. */

@@ -134,9 +134,15 @@ Timeline Panel with inline editing, progress bars, priority badges, and
 filtering. Command palette commands for task/milestone creation and
 stats viewing.
 
-Upcoming Work
+Phase 11 (Collaboration) — complete.
 
-Phase 11 — Collaboration
+User, Activity, and Comment repositories with CRUD and queries. IPC
+handlers, preload bridge, Collaboration panel with team management,
+activity feed, and comments. Command palette commands for user
+management and activity viewing. Schema migration v3 with users,
+activity_log, and comments tables.
+
+Upcoming Work
 
 Phase 12 — Studio Platform
 

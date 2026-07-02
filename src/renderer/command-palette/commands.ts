@@ -88,6 +88,61 @@ export function registerBuiltinCommands(): void {
       );
     },
   });
+
+  // --- Collaboration commands (Phase 11) ---
+  commandRegistry.register({
+    id: "collaboration:open-panel",
+    title: "Open Collaboration Panel",
+    category: "Collaboration",
+    keywords: ["team", "users", "activity", "comments"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "collaboration" } }));
+    },
+  });
+
+  commandRegistry.register({
+    id: "collaboration:add-user",
+    title: "Add Team Member",
+    category: "Collaboration",
+    keywords: ["user", "member", "add", "invite"],
+    run: async () => {
+      const name = window.prompt("Display name:");
+      if (!name?.trim()) return;
+      const email = window.prompt("Email (optional):");
+      await window.artworks.production.user.create({
+        displayName: name.trim(),
+        email: email?.trim() || undefined,
+      });
+    },
+  });
+
+  commandRegistry.register({
+    id: "collaboration:list-users",
+    title: "List Team Members",
+    category: "Collaboration",
+    keywords: ["users", "members", "team"],
+    run: async () => {
+      const users = await window.artworks.production.user.list() as Array<{
+        uuid: string; displayName: string; role: string; isActive: boolean;
+      }>;
+      const list = users.map((u) => `${u.displayName} (${u.role}) - ${u.isActive ? "Active" : "Inactive"}`).join("\n");
+      window.alert(`Team Members:\n${list || "None"}`);
+    },
+  });
+
+  commandRegistry.register({
+    id: "collaboration:show-activity",
+    title: "Show Recent Activity",
+    category: "Collaboration",
+    keywords: ["activity", "feed", "log"],
+    run: async () => {
+      const activities = await window.artworks.production.activity.list(undefined, 20) as Array<{
+        uuid: string; action: string; entityType: string; createdAt: string;
+      }>;
+      const list = activities.map((a) => `${a.action} ${a.entityType} - ${new Date(a.createdAt).toLocaleString()}`).join("\n");
+      window.alert(`Recent Activity:\n${list || "None"}`);
+    },
+  });
 }
 
 /** Register commands from enabled plugins into the command palette. */

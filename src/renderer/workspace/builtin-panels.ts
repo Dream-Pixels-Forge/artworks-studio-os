@@ -32,6 +32,9 @@ import "../panels/plugin-manager/plugin-manager-panel.js";
 // Phase 10 panels
 import "../panels/timeline/timeline-panel.js";
 
+// Phase 11 panels
+import "../panels/collaboration/collaboration-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",
