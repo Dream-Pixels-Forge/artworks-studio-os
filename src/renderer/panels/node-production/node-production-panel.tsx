@@ -4,14 +4,37 @@
  * Visual production workflows using a React Flow canvas-based node editor.
  * Supports creating, editing, and managing production pipelines.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEventHandler } from "react";
+import {
+  ReactFlow,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  Background,
+  Controls,
+  MiniMap,
+  Handle,
+  Position,
+  type Node,
+  type Edge,
+  type Connection,
+  type NodeProps,
+  type OnConnect,
+  type OnNodesChange,
+  type OnEdgesChange,
+  type ReactFlowInstance,
+} from "@xyflow/react";
 import { panelRegistry } from "../../workspace/registry.js";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+type WorkflowStatus = "draft" | "active" | "archived";
 
 interface NodeWorkflowMeta {
   uuid: string;
   name: string;
   description: string;
-  status: "draft" | "active" | "archived";
+  status: WorkflowStatus;
   nodeCount: number;
   createdAt: string;
   updatedAt: string;
@@ -30,11 +53,137 @@ interface WorkflowStats {
   archived: number;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  draft: "#e2b714",
-  active: "#2cb67d",
-  archived: "#666",
+// ─── Node Data Types ────────────────────────────────────────────────────────
+
+type NodeCategory = "production" | "ai" | "prompt" | "review" | "publishing";
+
+interface ProductionNodeData extends Record<string, unknown> {
+  label: string;
+  category: NodeCategory;
+  description?: string;
+  status?: string;
+}
+
+// ─── Node Type Colors ───────────────────────────────────────────────────────
+
+const NODE_COLORS: Record<NodeCategory, { bg: string; border: string; header: string }> = {
+  production: { bg: "#1a1f2e", border: "#7f5af0", header: "#7f5af0" },
+  ai: { bg: "#1a2e1a", border: "#2cb67d", header: "#2cb67d" },
+  prompt: { bg: "#2e2e1a", border: "#e2b714", header: "#e2b714" },
+  review: { bg: "#2e1a1a", border: "#e53170", header: "#e53170" },
+  publishing: { bg: "#1a1a2e", border: "#00b4d8", header: "#00b4d8" },
 };
+
+// ─── Custom Node Component ──────────────────────────────────────────────────
+
+function ProductionNode({ data, selected }: NodeProps<Node<ProductionNodeData>>) {
+  const nodeData = data as ProductionNodeData;
+  const colors = NODE_COLORS[nodeData.category] ?? NODE_COLORS.production;
+
+  return (
+    <div
+      style={{
+        background: colors.bg,
+        border: `2px solid ${selected ? "#fff" : colors.border}`,
+        borderRadius: 8,
+        minWidth: 180,
+        boxShadow: selected ? `0 0 12px ${colors.border}40` : "0 2px 8px rgba(0,0,0,0.3)",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          background: colors.header,
+          padding: "6px 12px",
+          borderRadius: "6px 6px 0 0",
+          fontSize: 11,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
+          color: "#000",
+        }}
+      >
+        {nodeData.category}
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "10px 12px" }}>
+        <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4 }}>{nodeData.label}</div>
+        {nodeData.description && (
+          <div style={{ fontSize: 11, color: "#888", lineHeight: 1.3 }}>{nodeData.description}</div>
+        )}
+        {nodeData.status && (
+          <div style={{ fontSize: 10, color: colors.border, marginTop: 6 }}>{nodeData.status}</div>
+        )}
+      </div>
+
+      {/* Handles */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{
+          width: 10,
+          height: 10,
+          background: colors.border,
+          border: "2px solid #000",
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{
+          width: 10,
+          height: 10,
+          background: colors.border,
+          border: "2px solid #000",
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── Node Palette Items ─────────────────────────────────────────────────────
+
+interface PaletteItem {
+  category: NodeCategory;
+  label: string;
+  description: string;
+}
+
+const NODE_PALETTE: PaletteItem[] = [
+  // Production
+  { category: "production", label: "Script", description: "Script or screenplay input" },
+  { category: "production", label: "Storyboard", description: "Visual storyboard planning" },
+  { category: "production", label: "Asset Pipeline", description: "Asset creation and management" },
+  { category: "production", label: "Assembly", description: "Final assembly and output" },
+  // AI
+  { category: "ai", label: "Image Gen", description: "AI image generation (DALL-E, Midjourney)" },
+  { category: "ai", label: "Video Gen", description: "AI video generation (Sora, Runway)" },
+  { category: "ai", label: "Audio Gen", description: "AI audio/music generation" },
+  { category: "ai", label: "Voice Synth", description: "AI voice synthesis and dialogue" },
+  // Prompt
+  { category: "prompt", label: "Prompt Template", description: "Reusable prompt template" },
+  { category: "prompt", label: "Prompt Chain", description: "Multi-step prompt chain" },
+  { category: "prompt", label: "Context", description: "Context or reference input" },
+  // Review
+  { category: "review", label: "Review Gate", description: "Human review checkpoint" },
+  { category: "review", label: "Quality Check", description: "Automated quality validation" },
+  { category: "review", label: "Feedback", description: "Feedback collection point" },
+  // Publishing
+  { category: "publishing", label: "Export", description: "Export to file or format" },
+  { category: "publishing", label: "Publish", description: "Publish to platform or service" },
+  { category: "publishing", label: "Archive", description: "Archive completed work" },
+];
+
+// ─── Helper: Generate unique ID ─────────────────────────────────────────────
+
+let nodeIdCounter = 0;
+function generateNodeId(): string {
+  nodeIdCounter += 1;
+  return `node_${Date.now()}_${nodeIdCounter}`;
+}
+
+// ─── Main Panel ─────────────────────────────────────────────────────────────
 
 export function NodeProductionPanel() {
   const [loading, setLoading] = useState(true);
@@ -44,8 +193,43 @@ export function NodeProductionPanel() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newWorkflowName, setNewWorkflowName] = useState("");
   const [newWorkflowDesc, setNewWorkflowDesc] = useState("");
-  const [editingNodes, setEditingNodes] = useState<string>("[]");
-  const [editingEdges, setEditingEdges] = useState<string>("[]");
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReturnType<typeof import("@xyflow/react").useReactFlow> | null>(null);
+
+  // Parse nodes and edges from workflow
+  const initialNodes: Node<ProductionNodeData>[] = useMemo(() => {
+    if (!selectedWorkflow) return [];
+    try {
+      return JSON.parse(selectedWorkflow.nodes);
+    } catch {
+      return [];
+    }
+  }, [selectedWorkflow]);
+
+  const initialEdges: Edge[] = useMemo(() => {
+    if (!selectedWorkflow) return [];
+    try {
+      return JSON.parse(selectedWorkflow.edges);
+    } catch {
+      return [];
+    }
+  }, [selectedWorkflow]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Update nodes/edges when workflow changes
+  useEffect(() => {
+    if (selectedWorkflow) {
+      setNodes(initialNodes);
+      setEdges(initialEdges);
+    }
+  }, [selectedWorkflow, initialNodes, initialEdges, setNodes, setEdges]);
+
+  // ─── Load workflows ───────────────────────────────────────────────────────
 
   const loadWorkflows = useCallback(async () => {
     try {
@@ -66,55 +250,99 @@ export function NodeProductionPanel() {
     void loadWorkflows();
   }, [loadWorkflows]);
 
+  // ─── Create workflow ──────────────────────────────────────────────────────
+
   const handleCreate = useCallback(async () => {
     if (!newWorkflowName.trim()) return;
     try {
+      const defaultNodes: Node<ProductionNodeData>[] = [
+        {
+          id: "start",
+          type: "production",
+          data: { label: "Start", category: "production", description: "Workflow entry point" },
+          position: { x: 50, y: 200 },
+        },
+      ];
       const wf = await window.artworks.production.nodeWorkflow.create({
         name: newWorkflowName.trim(),
         description: newWorkflowDesc.trim(),
+        nodes: JSON.stringify(defaultNodes),
+        edges: JSON.stringify([]),
       }) as NodeWorkflow;
       setWorkflows((prev) => [
-        { uuid: wf.uuid, name: wf.name, description: wf.description, status: wf.status, nodeCount: 0, createdAt: wf.createdAt, updatedAt: wf.updatedAt },
+        { uuid: wf.uuid, name: wf.name, description: wf.description, status: wf.status, nodeCount: 1, createdAt: wf.createdAt, updatedAt: wf.updatedAt },
         ...prev,
       ]);
       setStats((s) => s ? { ...s, total: s.total + 1, draft: s.draft + 1 } : s);
       setShowCreateModal(false);
       setNewWorkflowName("");
       setNewWorkflowDesc("");
+      // Auto-select the new workflow
+      setSelectedWorkflow({ ...wf, nodes: JSON.stringify(defaultNodes), edges: JSON.stringify([]), viewport: JSON.stringify({ x: 0, y: 0, zoom: 1 }) });
     } catch (err) {
       console.error("Failed to create workflow:", err);
     }
   }, [newWorkflowName, newWorkflowDesc]);
 
+  // ─── Select workflow ──────────────────────────────────────────────────────
+
   const handleSelect = useCallback(async (uuid: string) => {
     try {
       const wf = await window.artworks.production.nodeWorkflow.get(uuid) as NodeWorkflow;
       setSelectedWorkflow(wf);
-      setEditingNodes(wf.nodes);
-      setEditingEdges(wf.edges);
     } catch (err) {
       console.error("Failed to load workflow:", err);
     }
   }, []);
 
+  // ─── Save workflow ────────────────────────────────────────────────────────
+
   const handleSave = useCallback(async () => {
     if (!selectedWorkflow) return;
+    setIsSaving(true);
     try {
+      const viewport = reactFlowInstance?.getViewport() ?? { x: 0, y: 0, zoom: 1 };
       await window.artworks.production.nodeWorkflow.updateGraph(
         selectedWorkflow.uuid,
-        editingNodes,
-        editingEdges,
+        JSON.stringify(nodes),
+        JSON.stringify(edges),
+        JSON.stringify(viewport),
       );
+      setLastSaved(new Date());
     } catch (err) {
       console.error("Failed to save workflow:", err);
+    } finally {
+      setIsSaving(false);
     }
-  }, [selectedWorkflow, editingNodes, editingEdges]);
+  }, [selectedWorkflow, nodes, edges, reactFlowInstance]);
+
+  // ─── Auto-save (debounced) ────────────────────────────────────────────────
+
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleAutoSave = useCallback(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      void handleSave();
+    }, 2000);
+  }, [handleSave]);
+
+  useEffect(() => {
+    if (selectedWorkflow && (nodes.length > 0 || edges.length > 0)) {
+      scheduleAutoSave();
+    }
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [nodes, edges, selectedWorkflow, scheduleAutoSave]);
+
+  // ─── Status change ────────────────────────────────────────────────────────
 
   const handleStatusChange = useCallback(async (uuid: string, status: string) => {
     try {
       await window.artworks.production.nodeWorkflow.update(uuid, { status });
       setWorkflows((prev) =>
-        prev.map((w) => (w.uuid === uuid ? { ...w, status: status as NodeWorkflowMeta["status"] } : w)),
+        prev.map((w) => (w.uuid === uuid ? { ...w, status: status as WorkflowStatus } : w)),
       );
       setStats((s) => {
         if (!s) return s;
@@ -124,10 +352,15 @@ export function NodeProductionPanel() {
         counts[status as keyof typeof counts] = (counts[status as keyof typeof counts] ?? 0) + 1;
         return counts;
       });
+      if (selectedWorkflow?.uuid === uuid) {
+        setSelectedWorkflow((prev) => prev ? { ...prev, status: status as WorkflowStatus } : prev);
+      }
     } catch (err) {
       console.error("Failed to update status:", err);
     }
-  }, [workflows]);
+  }, [workflows, selectedWorkflow]);
+
+  // ─── Delete workflow ──────────────────────────────────────────────────────
 
   const handleDelete = useCallback(async (uuid: string) => {
     if (!window.confirm("Delete this workflow?")) return;
@@ -140,6 +373,61 @@ export function NodeProductionPanel() {
       console.error("Failed to delete workflow:", err);
     }
   }, [selectedWorkflow]);
+
+  // ─── React Flow handlers ──────────────────────────────────────────────────
+
+  const onConnect: OnConnect = useCallback(
+    (connection: Connection) => {
+      setEdges((eds) => addEdge({ ...connection, animated: true }, eds));
+    },
+    [setEdges],
+  );
+
+  const onInit: Parameters<typeof ReactFlow>[0]["onInit"] = useCallback((instance: ReactFlowInstance) => {
+    setReactFlowInstance(instance);
+  }, []);
+
+  // ─── Drag and drop from palette ───────────────────────────────────────────
+
+  const onDragOver: DragEventHandler<HTMLDivElement> = useCallback((event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop: DragEventHandler<HTMLDivElement> = useCallback(
+    (event) => {
+      event.preventDefault();
+
+      const dataStr = event.dataTransfer.getData("application/reactflow");
+      if (!dataStr || !reactFlowInstance) return;
+
+      const item: PaletteItem = JSON.parse(dataStr);
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      const newNode: Node<ProductionNodeData> = {
+        id: generateNodeId(),
+        type: "production",
+        data: {
+          label: item.label,
+          category: item.category,
+          description: item.description,
+        },
+        position,
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+    },
+    [reactFlowInstance, setNodes],
+  );
+
+  // ─── Node types ───────────────────────────────────────────────────────────
+
+  const nodeTypes = useMemo(() => ({ production: ProductionNode }), []);
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -154,41 +442,93 @@ export function NodeProductionPanel() {
       {/* Header */}
       <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 18, fontWeight: 600 }}>Node Production</span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+        {selectedWorkflow && (
+          <span style={{ fontSize: 12, color: "var(--text-secondary)", marginLeft: 8 }}>
+            {selectedWorkflow.name}
+            {lastSaved && ` · Saved ${lastSaved.toLocaleTimeString()}`}
+          </span>
+        )}
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          {selectedWorkflow && (
+            <>
+              <select
+                value={selectedWorkflow.status}
+                onChange={(e) => handleStatusChange(selectedWorkflow.uuid, e.target.value)}
+                style={{ padding: "4px 8px", fontSize: 12, borderRadius: 4, border: "1px solid var(--border)" }}
+              >
+                <option value="draft">Draft</option>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+              </select>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                style={{
+                  padding: "6px 14px",
+                  background: "var(--accent)",
+                  color: "var(--text-primary)",
+                  border: "none",
+                  borderRadius: 4,
+                  cursor: isSaving ? "wait" : "pointer",
+                  fontSize: 12,
+                  opacity: isSaving ? 0.6 : 1,
+                }}
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => handleDelete(selectedWorkflow.uuid)}
+                style={{
+                  padding: "6px 14px",
+                  background: "var(--danger, #e53170)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  fontSize: 12,
+                }}
+              >
+                Delete
+              </button>
+            </>
+          )}
           <button
             onClick={() => setShowCreateModal(true)}
             style={{
-              padding: "4px 12px",
+              padding: "6px 14px",
               background: "var(--accent)",
               color: "var(--text-primary)",
               border: "none",
               borderRadius: 4,
               cursor: "pointer",
-              fontSize: 13,
+              fontSize: 12,
             }}
           >
-            + New Workflow
+            + New
           </button>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats bar */}
       {stats && (
-        <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--border)", display: "flex", gap: 16, fontSize: 12, color: "var(--text-secondary)" }}>
+        <div style={{ padding: "6px 16px", borderBottom: "1px solid var(--border)", display: "flex", gap: 16, fontSize: 11, color: "var(--text-secondary)" }}>
           <span>Total: {stats.total}</span>
-          <span style={{ color: STATUS_COLORS.draft }}>Draft: {stats.draft}</span>
-          <span style={{ color: STATUS_COLORS.active }}>Active: {stats.active}</span>
-          <span style={{ color: STATUS_COLORS.archived }}>Archived: {stats.archived}</span>
+          <span style={{ color: NODE_COLORS.production.border }}>Draft: {stats.draft}</span>
+          <span style={{ color: NODE_COLORS.ai.border }}>Active: {stats.active}</span>
+          <span style={{ color: "#666" }}>Archived: {stats.archived}</span>
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main content */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Workflow List */}
-        <div style={{ width: 280, borderRight: "1px solid var(--border)", overflow: "auto", padding: 8 }}>
+        {/* Workflow list sidebar */}
+        <div style={{ width: 220, borderRight: "1px solid var(--border)", overflow: "auto", padding: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", color: "var(--text-secondary)", padding: "4px 8px", marginBottom: 4 }}>
+            Workflows
+          </div>
           {workflows.length === 0 ? (
-            <div style={{ padding: 16, color: "var(--text-secondary)", textAlign: "center" }}>
-              No workflows yet. Create one to get started.
+            <div style={{ padding: 16, color: "var(--text-secondary)", textAlign: "center", fontSize: 12 }}>
+              No workflows yet.
             </div>
           ) : (
             workflows.map((wf) => (
@@ -196,90 +536,126 @@ export function NodeProductionPanel() {
                 key={wf.uuid}
                 onClick={() => handleSelect(wf.uuid)}
                 style={{
-                  padding: "8px 12px",
-                  marginBottom: 4,
+                  padding: "8px 10px",
+                  marginBottom: 2,
                   borderRadius: 4,
                   cursor: "pointer",
                   background: selectedWorkflow?.uuid === wf.uuid ? "var(--surface-hover)" : "transparent",
-                  borderLeft: `3px solid ${STATUS_COLORS[wf.status] ?? "transparent"}`,
+                  borderLeft: `3px solid ${NODE_COLORS[wf.status === "draft" ? "production" : wf.status === "active" ? "ai" : "publishing"]?.border ?? "#666"}`,
+                  transition: "background 0.1s",
                 }}
               >
-                <div style={{ fontWeight: 500, fontSize: 13 }}>{wf.name}</div>
-                <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>
-                  {wf.nodeCount} nodes · {wf.status}
+                <div style={{ fontWeight: 500, fontSize: 12 }}>{wf.name}</div>
+                <div style={{ fontSize: 10, color: "var(--text-secondary)", marginTop: 2 }}>
+                  {wf.status} · {wf.nodeCount} nodes
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Editor / Empty State */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {selectedWorkflow ? (
-            <>
-              {/* Toolbar */}
-              <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 600 }}>{selectedWorkflow.name}</span>
-                <select
-                  value={selectedWorkflow.status}
-                  onChange={(e) => handleStatusChange(selectedWorkflow.uuid, e.target.value)}
-                  style={{ padding: "2px 8px", fontSize: 12, borderRadius: 4, border: "1px solid var(--border)" }}
-                >
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="archived">Archived</option>
-                </select>
-                <button
-                  onClick={handleSave}
+        {/* Node palette (when workflow selected) */}
+        {selectedWorkflow && (
+          <div style={{ width: 200, borderRight: "1px solid var(--border)", overflow: "auto", padding: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", color: "var(--text-secondary)", padding: "4px 8px", marginBottom: 8 }}>
+              Node Palette
+            </div>
+            {(["production", "ai", "prompt", "review", "publishing"] as NodeCategory[]).map((cat) => (
+              <div key={cat} style={{ marginBottom: 12 }}>
+                <div
                   style={{
-                    padding: "4px 12px",
-                    background: "var(--accent)",
-                    color: "var(--text-primary)",
-                    border: "none",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                    fontSize: 12,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    color: NODE_COLORS[cat].header,
+                    padding: "2px 8px",
+                    marginBottom: 4,
                   }}
                 >
-                  Save
-                </button>
-                <button
-                  onClick={() => handleDelete(selectedWorkflow.uuid)}
-                  style={{
-                    padding: "4px 12px",
-                    background: "var(--danger, #e53170)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                    fontSize: 12,
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-
-              {/* Canvas Placeholder */}
-              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>🎨</div>
-                  <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>React Flow Canvas</div>
-                  <div style={{ fontSize: 13 }}>
-                    Drag and drop nodes to build your production pipeline
-                  </div>
-                  <div style={{ fontSize: 12, marginTop: 8, color: "var(--text-tertiary, #888)" }}>
-                    Nodes: {JSON.parse(editingNodes).length} · Edges: {JSON.parse(editingEdges).length}
-                  </div>
+                  {cat}
                 </div>
+                {NODE_PALETTE.filter((item) => item.category === cat).map((item) => (
+                  <div
+                    key={item.label}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("application/reactflow", JSON.stringify(item));
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    style={{
+                      padding: "6px 8px",
+                      marginBottom: 2,
+                      borderRadius: 4,
+                      cursor: "grab",
+                      fontSize: 11,
+                      background: "var(--surface)",
+                      border: `1px solid ${NODE_COLORS[cat].border}30`,
+                      transition: "border-color 0.1s, background 0.1s",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLElement).style.borderColor = NODE_COLORS[cat].border;
+                      (e.target as HTMLElement).style.background = "var(--surface-hover)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLElement).style.borderColor = `${NODE_COLORS[cat].border}30`;
+                      (e.target as HTMLElement).style.background = "var(--surface)";
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                ))}
               </div>
-            </>
+            ))}
+          </div>
+        )}
+
+        {/* Canvas / Empty state */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }} ref={reactFlowWrapper}>
+          {selectedWorkflow ? (
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange as OnNodesChange}
+              onEdgesChange={onEdgesChange as OnEdgesChange}
+              onConnect={onConnect}
+              onInit={onInit}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              nodeTypes={nodeTypes}
+              fitView
+              snapToGrid
+              snapGrid={[16, 16]}
+              style={{ background: "#0d1117" }}
+              defaultEdgeOptions={{ animated: true, style: { stroke: "#444", strokeWidth: 2 } }}
+            >
+              <Background color="#1e2530" gap={16} size={1} />
+              <Controls
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 4,
+                }}
+              />
+              <MiniMap
+                nodeColor={(node) => {
+                  const data = node.data as ProductionNodeData;
+                  return NODE_COLORS[data?.category ?? "production"]?.border ?? "#666";
+                }}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 4,
+                }}
+                maskColor="rgba(0,0,0,0.5)"
+              />
+            </ReactFlow>
           ) : (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🔗</div>
                 <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Node-Based Production</div>
                 <div style={{ fontSize: 13 }}>
-                  Create visual production workflows with drag-and-drop nodes
+                  Select a workflow or create a new one to get started
                 </div>
               </div>
             </div>
@@ -323,6 +699,7 @@ export function NodeProductionPanel() {
                 value={newWorkflowName}
                 onChange={(e) => setNewWorkflowName(e.target.value)}
                 placeholder="My Production Pipeline"
+                autoFocus
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -330,6 +707,8 @@ export function NodeProductionPanel() {
                   borderRadius: 4,
                   fontSize: 14,
                   boxSizing: "border-box",
+                  background: "var(--surface-hover)",
+                  color: "var(--text-primary)",
                 }}
               />
             </div>
@@ -350,6 +729,8 @@ export function NodeProductionPanel() {
                   fontSize: 14,
                   resize: "vertical",
                   boxSizing: "border-box",
+                  background: "var(--surface-hover)",
+                  color: "var(--text-primary)",
                 }}
               />
             </div>
