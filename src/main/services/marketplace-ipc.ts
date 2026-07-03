@@ -77,5 +77,20 @@ export function registerMarketplaceIpc(db: StudioDatabase): void {
     };
   });
 
+  ipcMain.handle("marketplace:search", (_e, query: string, limit?: number) => {
+    log.debug("search", { query, limit });
+    return repo.search(query, limit);
+  });
+
+  ipcMain.handle("marketplace:popular", (_e, limit?: number) => {
+    log.debug("popular", { limit });
+    return repo.popular(limit);
+  });
+
+  ipcMain.handle("marketplace:top-rated", (_e, limit?: number) => {
+    log.debug("top-rated", { limit });
+    return repo.topRated(limit);
+  });
+
   log.info("marketplace IPC registered");
 }

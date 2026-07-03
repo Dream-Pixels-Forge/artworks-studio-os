@@ -27,6 +27,13 @@
 .ai-chat__input-bar input { flex: 1; font-size: var(--font-size-sm); color: var(--color-text); background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); outline: none; }
 .ai-chat__input-bar button { font-size: var(--font-size-sm); background: var(--color-accent); color: var(--color-bg); border: none; border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); cursor: pointer; }
 .ai-chat__empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--color-text-muted); font-size: var(--font-size-sm); }
+.ai-chat__toolbar { display: flex; gap: var(--space-2); padding: var(--space-2); border-bottom: 1px solid var(--color-border); align-items: center; }
+.ai-chat__toolbar-label { font-size: var(--font-size-sm); color: var(--color-text-muted); }
+.ai-chat__model-select { font-size: var(--font-size-sm); color: var(--color-text); background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); cursor: pointer; }
+.ai-chat__stream-toggle { font-size: var(--font-size-xs); background: var(--color-surface); color: var(--color-text-muted); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); cursor: pointer; }
+.ai-chat__stream-toggle--active { background: var(--color-accent); color: var(--color-bg); border-color: var(--color-accent); }
+.ai-chat__usage { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-left: auto; }
+.ai-chat__error { font-size: var(--font-size-sm); color: var(--color-danger); padding: var(--space-2); text-align: center; }
 
 /* --- Story Bible --- */
 .story-bible { display: flex; flex-direction: row; height: 100%; overflow: hidden; }

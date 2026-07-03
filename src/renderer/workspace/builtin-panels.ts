@@ -53,6 +53,15 @@ import "../panels/enterprise/enterprise-panel.js";
 // Phase 17 panels
 import "../panels/production-intelligence/production-intelligence-panel.js";
 
+// Phase 18 panels
+import "../panels/lifecycle/lifecycle-panel.js";
+import "../panels/notification-center/notification-center-panel.js";
+import "../panels/backup-recovery/backup-recovery-panel.js";
+import "../panels/preferences/preferences-panel.js";
+
+// Phase 19 panels
+import ExportPanel from "../panels/export/export-panel.js";
+
 panelRegistry.register({
   id: "project-explorer",
   title: "Project Explorer",
@@ -69,4 +78,13 @@ panelRegistry.register({
   component: WelcomePanel,
   defaultSlot: "center",
   defaultVisible: true,
+});
+
+panelRegistry.register({
+  id: "export",
+  title: "Production Export",
+  icon: "\uD83D\uDCC4",
+  component: ExportPanel,
+  defaultSlot: "center",
+  defaultVisible: false,
 });

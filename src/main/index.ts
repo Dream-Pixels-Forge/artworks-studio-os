@@ -21,6 +21,15 @@ import { registerPluginIpc } from "@main/services/plugin-ipc.js";
 import { registerMarketplaceIpc } from "@main/services/marketplace-ipc.js";
 import { registerEnterpriseIpc } from "@main/services/enterprise-ipc.js";
 import { registerIntelligenceIpc } from "@main/services/intelligence-ipc.js";
+import { registerLifecycleIpc } from "@main/services/lifecycle-ipc.js";
+import { registerNotificationIpc } from "@main/services/notification-ipc.js";
+import { registerBackupIpc } from "@main/services/backup-ipc.js";
+import { CrdtService } from "@main/services/crdt-service.js";
+import { PresenceService } from "@main/services/presence-service.js";
+import { registerCollaborationIpc } from "@main/services/collaboration-ipc.js";
+import { ApiKeyService } from "@main/services/api-key-service.js";
+import { ShortcutsService } from "@main/services/shortcuts-service.js";
+import { registerApiKeyIpc, registerShortcutsIpc } from "@main/services/preferences-ipc.js";
 import { registerExplorerHandlers } from "@main/integrations/production-explorer/ipc-handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +44,7 @@ const settingsService = new SettingsService();
 const windowManager = new WindowManager();
 let database: StudioDatabase | undefined;
 let pluginRuntime: PluginRuntime | undefined;
+let crdtService: CrdtService | undefined;
 /** True once before-quit has begun its async teardown. */
 let isQuitting = false;
 
@@ -91,6 +101,32 @@ app.whenReady().then(async () => {
   // Register production intelligence IPC (cross-cutting analytics).
   registerIntelligenceIpc(database);
 
+  // Register production lifecycle IPC (state machine + audit trail).
+  registerLifecycleIpc(database);
+
+  // Register notification center IPC (real-time alerts + unread tracking).
+  registerNotificationIpc(database);
+
+  // Register backup & recovery IPC (database backup/restore, export/import, crash recovery).
+  registerBackupIpc(database);
+
+  // Phase 18.5: Collaboration — CRDT concurrent editing + presence tracking.
+  crdtService = new CrdtService(database);
+  const presenceService = new PresenceService();
+  await crdtService.init();
+  registerCollaborationIpc(crdtService, presenceService);
+
+  // Phase 18.5: User Preferences — API keys + keyboard shortcuts.
+  const apiKeyService = new ApiKeyService();
+  const shortcutsService = new ShortcutsService();
+  await apiKeyService.init();
+  await shortcutsService.init();
+  registerApiKeyIpc(apiKeyService);
+  registerShortcutsIpc(shortcutsService);
+
+  // Wire shortcuts to dispatch menu actions to the renderer.
+  shortcutsService.setOnAction((action) => windowManager.forwardMenuAction(action));
+
   // Window controls (title bar) + the main window with persisted state.
   registerWindowIpc();
   await windowManager.start({ indexHtmlPath: getIndexHtml() });
@@ -121,8 +157,10 @@ app.on("before-quit", (event) => {
         await pluginRuntime.stop();
         pluginRuntime = undefined;
       }
-      // Close the database AFTER plugin teardown so plugin onDeactivate
-      // handlers can still touch the DB if they need to.
+      // Flush and destroy CRDT documents before closing the database.
+      await crdtService.shutdown();
+      // Close the database AFTER plugin and CRDT teardown so handlers
+      // can still touch the DB if they need to.
       database?.close();
       database = undefined;
     } finally {

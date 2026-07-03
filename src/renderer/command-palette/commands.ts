@@ -6,6 +6,7 @@
  * safe to import under React StrictMode's double-invoke.
  */
 import { commandRegistry } from "./registry.js";
+import { loadTokens } from "../ui/tokens/index.js";
 
 /** Renderer event the shell listens for to open the settings panel. */
 const OPEN_SETTINGS_EVENT = "artworks:open-settings";
@@ -16,8 +17,7 @@ export function registerBuiltinCommands(): void {
     id: "app.reload-tokens",
     title: "Reload design tokens",
     category: "Developer",
-    run: async () => {
-      const { loadTokens } = await import("../ui/tokens/index.js");
+    run: () => {
       loadTokens();
     },
   });
@@ -411,6 +411,112 @@ export function registerBuiltinCommands(): void {
         `Agents: ${h.agents} | Tasks: ${h.activeTasks}\n` +
         `Overdue Timelines: ${h.overdueTimelines}`
       );
+    },
+  });
+
+  // --- Production Lifecycle commands (Phase 18) ---
+  commandRegistry.register({
+    id: "lifecycle:open-panel",
+    title: "Open Production Lifecycle",
+    category: "Lifecycle",
+    keywords: ["lifecycle", "state", "production", "workflow", "pipeline"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "lifecycle" } }));
+    },
+  });
+
+  commandRegistry.register({
+    id: "lifecycle:show-stats",
+    title: "Show Lifecycle Stats",
+    category: "Lifecycle",
+    keywords: ["stats", "overview", "production"],
+    run: async () => {
+      const s = await window.artworks.lifecycle.stats() as {
+        total: number; byState: Record<string, number>;
+        transitionsToday: number; avgTimeInStateHours: number;
+      };
+      window.alert(
+        `Lifecycle Stats:\n` +
+        `Total: ${s.total}\n` +
+        `By State: ${Object.entries(s.byState).map(([k, v]) => `${k}: ${v}`).join(", ")}\n` +
+        `Transitions Today: ${s.transitionsToday}\n` +
+        `Avg Time in State: ${s.avgTimeInStateHours}h`
+      );
+    },
+  });
+
+  // --- Notification Center commands (Phase 18) ---
+  commandRegistry.register({
+    id: "notification:open-panel",
+    title: "Open Notification Center",
+    category: "Notifications",
+    keywords: ["notifications", "alerts", "unread", "dismiss"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "notification-center" } }));
+    },
+  });
+
+  commandRegistry.register({
+    id: "notification:unread-count",
+    title: "Show Unread Notification Count",
+    category: "Notifications",
+    keywords: ["unread", "count", "badge"],
+    run: async () => {
+      const r = await window.artworks.notification["unread-count"]() as { count: number };
+      window.alert(`Unread notifications: ${r.count}`);
+    },
+  });
+
+  // --- Backup & Recovery commands (Phase 18) ---
+  commandRegistry.register({
+    id: "backup:open-panel",
+    title: "Open Backup & Recovery",
+    category: "Backup",
+    keywords: ["backup", "restore", "recovery", "export", "import"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "backup-recovery" } }));
+    },
+  });
+
+  commandRegistry.register({
+    id: "backup:create",
+    title: "Create Database Backup",
+    category: "Backup",
+    keywords: ["backup", "create", "save"],
+    run: async () => {
+      const r = await window.artworks.backup.create("manual", "Manual backup") as { backupPath: string; sizeBytes: number };
+      window.alert(`Backup created: ${r.backupPath} (${r.sizeBytes} bytes)`);
+    },
+  });
+
+  commandRegistry.register({
+    id: "backup:show-stats",
+    title: "Show Backup Stats",
+    category: "Backup",
+    keywords: ["stats", "overview", "backup"],
+    run: async () => {
+      const s = await window.artworks.backup.stats() as {
+        totalBackups: number; totalSizeBytes: number;
+        newestBackup: string | null; recoveryPoints: number;
+      };
+      window.alert(
+        `Backup Stats:\n` +
+        `Total: ${s.totalBackups} backups\n` +
+        `Size: ${s.totalSizeBytes} bytes\n` +
+        `Last: ${s.newestBackup ?? "Never"}\n` +
+        `Recovery Points: ${s.recoveryPoints}`
+      );
+    },
+  });
+
+  // --- Preferences commands (Phase 18) ---
+  commandRegistry.register({
+    id: "preferences:open",
+    title: "Open Preferences",
+    category: "Settings",
+    keywords: ["settings", "preferences", "api keys", "shortcuts", "theme"],
+    run: () => {
+      window.dispatchEvent(new CustomEvent("artworks:open-panel", { detail: { panelId: "preferences" } }));
     },
   });
 

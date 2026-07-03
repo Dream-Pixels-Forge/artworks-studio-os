@@ -282,6 +282,21 @@ export class MarketplaceRepository {
        ORDER BY count DESC`,
     );
   }
+
+  /** Search listings by query string (delegates to FTS). */
+  search(query: string, limit = 50): MarketplaceListing[] {
+    return this.list({ search: query, limit });
+  }
+
+  /** Get popular listings sorted by download count. */
+  popular(limit = 20): MarketplaceListing[] {
+    return this.list({ sortBy: "downloads", sortOrder: "desc", limit });
+  }
+
+  /** Get top-rated listings sorted by rating. */
+  topRated(limit = 20): MarketplaceListing[] {
+    return this.list({ sortBy: "rating", sortOrder: "desc", limit });
+  }
 }
 
 function rowToRecord(row: MarketplaceRow): MarketplaceListing {

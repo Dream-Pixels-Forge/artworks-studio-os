@@ -2,7 +2,17 @@
 
 type ThemeMode = "studio-dark" | "studio-light" | "system";
 type ResolvedTheme = "studio-dark" | "studio-light";
-type MenuAction = "new-production" | "open-production";
+type MenuAction =
+  | "new-production"
+  | "open-production"
+  | "command-palette"
+  | "toggle-theme"
+  | "save"
+  | "new-entity"
+  | "search"
+  | "open-settings"
+  | "toggle-sidebar"
+  | "toggle-terminal";
 type PreferenceKey = "default-production";
 
 interface ArtworksApi {
@@ -78,6 +88,10 @@ interface ArtworksApi {
       connect: (source: string, target: string, type: string) => Promise<unknown>;
       relationships: (from: string) => Promise<unknown>;
       disconnect: (source: string, target: string, type: string) => Promise<unknown>;
+      all: () => Promise<{ entities: Array<{ uuid: string; name: string; type: string; status: string }>; relationships: Array<{ source: string; target: string; type: string }> }>;
+      neighbors: (uuid: string) => Promise<Array<{ source: string; target: string; type: string }>>;
+      "shortest-path": (from: string, to: string) => Promise<string[] | null>;
+      subgraph: (uuid: string, maxHops?: number) => Promise<{ entities: Array<{ uuid: string; name: string; type: string; status: string }>; relationships: Array<{ source: string; target: string; type: string }> }>;
     };
     version: {
       list: (entityUuid: string) => Promise<unknown>;
@@ -238,6 +252,9 @@ interface ArtworksApi {
     list: (filter?: Record<string, unknown>) => Promise<unknown>;
     featured: (limit?: number) => Promise<unknown>;
     recent: (limit?: number) => Promise<unknown>;
+    search: (query: string, limit?: number) => Promise<unknown>;
+    popular: (limit?: number) => Promise<unknown>;
+    topRated: (limit?: number) => Promise<unknown>;
     getByUuid: (uuid: string) => Promise<unknown>;
     getBySlug: (slug: string) => Promise<unknown>;
     publish: (input: Record<string, unknown>) => Promise<unknown>;
@@ -256,6 +273,109 @@ interface ArtworksApi {
     "ai-usage": () => Promise<unknown>;
     team: () => Promise<unknown>;
     summary: () => Promise<unknown>;
+  };
+
+  lifecycle: {
+    get: (entityUuid: string) => Promise<unknown>;
+    list: (filter?: { state?: string }) => Promise<unknown>;
+    create: (entityUuid: string, enteredBy?: string) => Promise<unknown>;
+    transition: (entityUuid: string, toState: string, triggeredBy?: string, reason?: string) => Promise<unknown>;
+    "can-transition": (from: string, to: string) => Promise<unknown>;
+    "valid-transitions": (from: string) => Promise<unknown>;
+    history: (entityUuid: string, limit?: number) => Promise<unknown>;
+    "all-transitions": (limit?: number) => Promise<unknown>;
+    stats: () => Promise<unknown>;
+    delete: (entityUuid: string) => Promise<unknown>;
+  };
+
+  notification: {
+    create: (input: {
+      type: string; title: string; message: string;
+      source?: string; source_uuid?: string; actor_uuid?: string;
+      action_url?: string; metadata?: Record<string, unknown>;
+    }) => Promise<unknown>;
+    list: (filter?: { type?: string; source?: string; read?: boolean; dismissed?: boolean; since?: string; limit?: number }) => Promise<unknown>;
+    get: (uuid: string) => Promise<unknown>;
+    "mark-read": (uuid: string) => Promise<unknown>;
+    "mark-all-read": () => Promise<unknown>;
+    dismiss: (uuid: string) => Promise<unknown>;
+    "dismiss-all": () => Promise<unknown>;
+    "unread-count": () => Promise<unknown>;
+    stats: () => Promise<unknown>;
+    delete: (uuid: string) => Promise<unknown>;
+  };
+
+  backup: {
+    create: (type?: string, label?: string) => Promise<unknown>;
+    list: () => Promise<unknown>;
+    restore: (backupPath: string) => Promise<unknown>;
+    delete: (uuid: string) => Promise<unknown>;
+    "export-production": (entityUuid: string) => Promise<unknown>;
+    "import-production": (data: { entities: Array<Record<string, unknown>>; graphs?: Array<Record<string, unknown>> }) => Promise<unknown>;
+    "recover-latest": () => Promise<unknown>;
+    stats: () => Promise<unknown>;
+  };
+
+  "export": {
+    production: (options: {
+      format: "json" | "markdown";
+      includeGraph?: boolean;
+      includeTimeline?: boolean;
+      includeComments?: boolean;
+      entityTypes?: string[];
+    }) => Promise<{ content: string; filename: string; mimeType: string; entityCount: number }>;
+  };
+
+  "api-keys": {
+    get: () => Promise<{ keys: Record<string, string> }>;
+    set: (provider: string, apiKey: string) => Promise<{ keys: Record<string, string> }>;
+    delete: (provider: string) => Promise<{ keys: Record<string, string> }>;
+  };
+
+  shortcuts: {
+    get: () => Promise<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>;
+    set: (actionId: string, accelerator: string) => Promise<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>;
+    "reset-action": (actionId: string) => Promise<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>;
+    "reset-all": () => Promise<{ shortcuts: Record<string, string>; defaults: Record<string, string> }>;
+  };
+
+  ai: {
+    listModels: () => Promise<Array<{ id: string; provider: string; displayName: string; maxTokens: number; supportsStreaming: boolean; supportsImages: boolean; costPer1kInput: number; costPer1kOutput: number }>>;
+    complete: (messages: Array<{ role: string; content: string }>, options?: { model?: string; provider?: string; temperature?: number; maxTokens?: number }) => Promise<{ content: string; model: string; provider: string; usage: { promptTokens: number; completionTokens: number; totalTokens: number } }>;
+    stream: (
+      messages: Array<{ role: string; content: string }>,
+      options?: { model?: string; provider?: string; temperature?: number; maxTokens?: number },
+    ) => {
+      subscribe: (onChunk: (chunk: { type: string; text?: string; usage?: { promptTokens: number; completionTokens: number; totalTokens: number }; error?: string }) => void) => () => void;
+    };
+  };
+
+  collab: {
+    getDocumentContent: (documentId: string) => Promise<string>;
+    getDocumentMetadata: (documentId: string) => Promise<Record<string, unknown>>;
+    getStateVector: (documentId: string) => Promise<string>;
+    applyUpdate: (documentId: string, updateBase64: string) => Promise<boolean>;
+    getVersionClock: (documentId: string) => Promise<number>;
+    flush: () => Promise<void>;
+    destroyDoc: (documentId: string) => Promise<void>;
+    updatePresence: (
+      userUuid: string,
+      userName: string,
+      documentId: string,
+      cursor?: { index: number; length: number },
+      selection?: { anchor: number; head: number },
+    ) => Promise<void>;
+    removePresence: (userUuid: string, documentId: string) => Promise<void>;
+    getDocumentPresence: (documentId: string) => Promise<Array<{
+      userUuid: string;
+      userName: string;
+      documentId: string;
+      cursor?: { index: number; length: number };
+      selection?: { anchor: number; head: number };
+      lastSeen: string;
+    }>>;
+    getActiveDocuments: () => Promise<string[]>;
+    removeUser: (userUuid: string) => Promise<void>;
   };
 
   enterprise: {

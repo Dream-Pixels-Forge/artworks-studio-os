@@ -44,7 +44,17 @@ export interface WindowListEntry {
  * renderer. Renderer-side concerns (open dialogs, palette, panels) live
  * there; the menu is just a launcher.
  */
-export type MenuAction = "new-production" | "open-production";
+export type MenuAction =
+  | "new-production"
+  | "open-production"
+  | "command-palette"
+  | "toggle-theme"
+  | "save"
+  | "new-entity"
+  | "search"
+  | "open-settings"
+  | "toggle-sidebar"
+  | "toggle-terminal";
 
 /** Renderer → main channels (invoked from the title bar / preload). */
 export const WINDOW_CHANNELS = {

@@ -60,3 +60,7 @@ export type {
   TeamProductivity,
   ProductionSummary,
 } from "./production-intelligence-repository.js";
+export { LifecycleRepository } from "./lifecycle-repository.js";
+export type { ProductionLifecycle, LifecycleTransition, LifecycleState } from "./lifecycle-repository.js";
+export { NotificationRepository } from "./notification-repository.js";
+export type { Notification as NotificationEntity, NotificationType, NotificationStats } from "./notification-repository.js";

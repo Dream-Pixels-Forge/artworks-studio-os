@@ -9,8 +9,23 @@ export default defineConfig({
       "@shared": resolve(__dirname, "src/shared"),
     },
   },
+  esbuild: {
+    jsx: "automatic",
+    jsxImportSource: "react",
+  },
   test: {
     environment: "node",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "lcov"],
+      exclude: [
+        "**/node_modules/**",
+        "**/test-utils.*",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/out/**",
+      ],
+    },
   },
 });
