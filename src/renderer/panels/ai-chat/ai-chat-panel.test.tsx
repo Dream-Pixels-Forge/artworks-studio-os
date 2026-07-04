@@ -5,31 +5,12 @@ import { AIChatPanel } from "./ai-chat-panel.js";
 
 /* ------------------------------------------------------------------ */
 /*  Mock window.artworks (preload bridge)                             */
+/*                                                                    */
+/*  The real bridge shape lives in src/types/global.d.ts (ArtworksApi).*/
+/*  We do NOT redeclare Window here — that would narrow the global    */
+/*  type for every renderer file and mask real type errors. Instead   */
+/*  we install a partial mock via a cast at the assignment site.      */
 /* ------------------------------------------------------------------ */
-
-interface MockArtworks {
-  ai: {
-    stream: ReturnType<typeof vi.fn>;
-    complete: ReturnType<typeof vi.fn>;
-    listModels: ReturnType<typeof vi.fn>;
-  };
-  production: {
-    conversation: {
-      list: ReturnType<typeof vi.fn>;
-      create: ReturnType<typeof vi.fn>;
-      get: ReturnType<typeof vi.fn>;
-      addMessage: ReturnType<typeof vi.fn>;
-      delete: ReturnType<typeof vi.fn>;
-    };
-  };
-  menu: { onAction: ReturnType<typeof vi.fn> };
-}
-
-declare global {
-  interface Window {
-    artworks: MockArtworks;
-  }
-}
 
 type StreamChunk =
   | { type: "text"; text: string }
@@ -62,7 +43,10 @@ beforeEach(() => {
     HTMLElement.prototype.scrollIntoView = vi.fn();
   }
 
-  window.artworks = {
+  // Install a partial mock of the preload bridge. Only the slices the
+  // AIChatPanel touches are exercised; the cast keeps this test-only
+  // shape from leaking onto the global Window type.
+  (window as unknown as { artworks: Record<string, unknown> }).artworks = {
     ai: {
       stream: mockStream,
       complete: mockComplete,

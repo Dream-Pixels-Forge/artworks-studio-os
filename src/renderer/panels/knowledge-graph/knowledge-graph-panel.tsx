@@ -231,9 +231,10 @@ export default function KnowledgeGraphPanel(): ReactElement {
   // Unique edge types
   const edgeTypes = useMemo(() => [...new Set(relationships.map((r) => r.type))].sort(), [relationships]);
 
-  // React Flow nodes & edges
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  // React Flow nodes & edges. Pass the type parameter so the hooks don't
+  // infer `never[]` from the empty initial array.
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     setNodes(layoutNodes(filteredEntities));

@@ -101,7 +101,10 @@ export function MarketplacePanel() {
   const loadListings = useCallback(async () => {
     try {
       setLoading(true);
-      let result: unknown[];
+      // Each marketplace call returns Promise<unknown> (the preload bridge
+      // is intentionally loosely typed); collect into one variable and
+      // cast to the listing shape once, at the single assignment site.
+      let result: unknown;
 
       if (debouncedSearch.trim()) {
         // Use dedicated search endpoint when searching
