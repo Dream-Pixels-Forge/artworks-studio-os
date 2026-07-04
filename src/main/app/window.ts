@@ -7,6 +7,7 @@
  * business logic — just window configuration.
  */
 import { BrowserWindow } from "electron";
+import { fileURLToPath } from "node:url";
 import type { WindowState } from "@shared/window/index.js";
 
 export interface CreateWindowOptions {
@@ -81,5 +82,5 @@ function loadRenderer(window: BrowserWindow, path: string): void {
  */
 function getPreloadPath(): string {
   // electron-vite places the bundled preload at out/preload/index.mjs
-  return new URL("../preload/index.mjs", import.meta.url).pathname;
+  return fileURLToPath(new URL("../preload/index.mjs", import.meta.url));
 }

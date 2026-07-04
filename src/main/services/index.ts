@@ -6,3 +6,8 @@ export { CHANNEL_GET, CHANNEL_SET, CHANNEL_NATIVE } from "./theme-ipc.js";
 export { SettingsService } from "./settings-service.js";
 export type { Preferences, SettingsState } from "@shared/settings/index.js";
 export { registerSettingsIpc, registerStudioStatusIpc } from "./settings-ipc.js";
+export { CrdtService } from "./crdt-service.js";
+export type { CrdtDocumentMeta } from "./crdt-service.js";
+export { PresenceService } from "./presence-service.js";
+export type { PresenceEntry, CursorPosition, SelectionRange } from "./presence-service.js";
+export { registerCollaborationIpc } from "./collaboration-ipc.js";

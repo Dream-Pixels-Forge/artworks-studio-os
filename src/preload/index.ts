@@ -164,6 +164,14 @@ const artworksApi = {
         ipcRenderer.invoke("production:graph:relationships", from),
       disconnect: (source: string, target: string, type: string) =>
         ipcRenderer.invoke("production:graph:disconnect", source, target, type),
+      all: () =>
+        ipcRenderer.invoke("production:graph:all"),
+      neighbors: (uuid: string) =>
+        ipcRenderer.invoke("production:graph:neighbors", uuid),
+      "shortest-path": (from: string, to: string) =>
+        ipcRenderer.invoke("production:graph:shortest-path", from, to),
+      subgraph: (uuid: string, maxHops?: number) =>
+        ipcRenderer.invoke("production:graph:subgraph", uuid, maxHops),
     },
     version: {
       list: (entityUuid: string) =>
@@ -428,6 +436,187 @@ const artworksApi = {
     },
   },
 
+  /** Production Intelligence — cross-cutting analytics dashboard. */
+  intelligence: {
+    health: () =>
+      ipcRenderer.invoke("intelligence:health"),
+    activity: (since?: string) =>
+      ipcRenderer.invoke("intelligence:activity", since),
+    timeline: (projectUuid?: string) =>
+      ipcRenderer.invoke("intelligence:timeline", projectUuid),
+    entities: () =>
+      ipcRenderer.invoke("intelligence:entities"),
+    "ai-usage": () =>
+      ipcRenderer.invoke("intelligence:ai-usage"),
+    team: () =>
+      ipcRenderer.invoke("intelligence:team"),
+    summary: () =>
+      ipcRenderer.invoke("intelligence:summary"),
+  },
+
+  /** Production Lifecycle — state machine with transition guards and audit trail. */
+  lifecycle: {
+    get: (entityUuid: string) =>
+      ipcRenderer.invoke("lifecycle:get", entityUuid),
+    list: (filter?: { state?: string }) =>
+      ipcRenderer.invoke("lifecycle:list", filter),
+    create: (entityUuid: string, enteredBy?: string) =>
+      ipcRenderer.invoke("lifecycle:create", entityUuid, enteredBy),
+    transition: (entityUuid: string, toState: string, triggeredBy?: string, reason?: string) =>
+      ipcRenderer.invoke("lifecycle:transition", entityUuid, toState, triggeredBy, reason),
+    "can-transition": (from: string, to: string) =>
+      ipcRenderer.invoke("lifecycle:can-transition", from, to),
+    "valid-transitions": (from: string) =>
+      ipcRenderer.invoke("lifecycle:valid-transitions", from),
+    history: (entityUuid: string, limit?: number) =>
+      ipcRenderer.invoke("lifecycle:history", entityUuid, limit),
+    "all-transitions": (limit?: number) =>
+      ipcRenderer.invoke("lifecycle:all-transitions", limit),
+    stats: () =>
+      ipcRenderer.invoke("lifecycle:stats"),
+    delete: (entityUuid: string) =>
+      ipcRenderer.invoke("lifecycle:delete", entityUuid),
+  },
+
+  /** Plugin management — install, enable/disable, uninstall, execute commands. */
+  notification: {
+    create: (input: {
+      type: string; title: string; message: string;
+      source?: string; source_uuid?: string; actor_uuid?: string;
+      action_url?: string; metadata?: Record<string, unknown>;
+    }) => ipcRenderer.invoke("notification:create", input),
+    list: (filter?: { type?: string; source?: string; read?: boolean; dismissed?: boolean; since?: string; limit?: number }) =>
+      ipcRenderer.invoke("notification:list", filter),
+    get: (uuid: string) =>
+      ipcRenderer.invoke("notification:get", uuid),
+    "mark-read": (uuid: string) =>
+      ipcRenderer.invoke("notification:mark-read", uuid),
+    "mark-all-read": () =>
+      ipcRenderer.invoke("notification:mark-all-read"),
+    dismiss: (uuid: string) =>
+      ipcRenderer.invoke("notification:dismiss", uuid),
+    "dismiss-all": () =>
+      ipcRenderer.invoke("notification:dismiss-all"),
+    "unread-count": () =>
+      ipcRenderer.invoke("notification:unread-count"),
+    stats: () =>
+      ipcRenderer.invoke("notification:stats"),
+    delete: (uuid: string) =>
+      ipcRenderer.invoke("notification:delete", uuid),
+  },
+
+  /** Collaboration — CRDT-based concurrent editing + presence tracking. */
+  collab: {
+    getDocumentContent: (documentId: string) =>
+      ipcRenderer.invoke("collab:getDocumentContent", documentId),
+    getDocumentMetadata: (documentId: string) =>
+      ipcRenderer.invoke("collab:getDocumentMetadata", documentId),
+    getStateVector: (documentId: string) =>
+      ipcRenderer.invoke("collab:getStateVector", documentId),
+    applyUpdate: (documentId: string, updateBase64: string) =>
+      ipcRenderer.invoke("collab:applyUpdate", documentId, updateBase64),
+    getVersionClock: (documentId: string) =>
+      ipcRenderer.invoke("collab:getVersionClock", documentId),
+    flush: () =>
+      ipcRenderer.invoke("collab:flush"),
+    destroyDoc: (documentId: string) =>
+      ipcRenderer.invoke("collab:destroyDoc", documentId),
+    updatePresence: (
+      userUuid: string,
+      userName: string,
+      documentId: string,
+      cursor?: { index: number; length: number },
+      selection?: { anchor: number; head: number },
+    ) =>
+      ipcRenderer.invoke("collab:updatePresence", userUuid, userName, documentId, cursor, selection),
+    removePresence: (userUuid: string, documentId: string) =>
+      ipcRenderer.invoke("collab:removePresence", userUuid, documentId),
+    getDocumentPresence: (documentId: string) =>
+      ipcRenderer.invoke("collab:getDocumentPresence", documentId),
+    getActiveDocuments: () =>
+      ipcRenderer.invoke("collab:getActiveDocuments"),
+    removeUser: (userUuid: string) =>
+      ipcRenderer.invoke("collab:removeUser", userUuid),
+  },
+
+  /** Backup & Recovery — database backup/restore, production export/import, crash recovery. */
+  backup: {
+    create: (type?: string, label?: string) =>
+      ipcRenderer.invoke("backup:create", type, label),
+    list: () =>
+      ipcRenderer.invoke("backup:list"),
+    restore: (backupPath: string) =>
+      ipcRenderer.invoke("backup:restore", backupPath),
+    delete: (uuid: string) =>
+      ipcRenderer.invoke("backup:delete", uuid),
+    "export-production": (entityUuid: string) =>
+      ipcRenderer.invoke("backup:export-production", entityUuid),
+    "import-production": (data: { entities: Array<Record<string, unknown>>; graphs?: Array<Record<string, unknown>> }) =>
+      ipcRenderer.invoke("backup:import-production", data),
+    "recover-latest": () =>
+      ipcRenderer.invoke("backup:recover-latest"),
+    stats: () =>
+      ipcRenderer.invoke("backup:stats"),
+  },
+
+  /** Production Export — export production data as Markdown or JSON. */
+  "export": {
+    production: (options: {
+      format: "json" | "markdown";
+      includeGraph?: boolean;
+      includeTimeline?: boolean;
+      includeComments?: boolean;
+      entityTypes?: string[];
+    }) => ipcRenderer.invoke("export:production", options),
+  },
+
+  /** API key management — store/retrieve/delete AI provider keys. */
+  "api-keys": {
+    get: () =>
+      ipcRenderer.invoke("api-keys:get"),
+    set: (provider: string, apiKey: string) =>
+      ipcRenderer.invoke("api-keys:set", provider, apiKey),
+    delete: (provider: string) =>
+      ipcRenderer.invoke("api-keys:delete", provider),
+  },
+
+  /** Keyboard shortcuts — get/set/reset custom shortcuts. */
+  shortcuts: {
+    get: () =>
+      ipcRenderer.invoke("shortcuts:get"),
+    set: (actionId: string, accelerator: string) =>
+      ipcRenderer.invoke("shortcuts:set", actionId, accelerator),
+    "reset-action": (actionId: string) =>
+      ipcRenderer.invoke("shortcuts:reset-action", actionId),
+    "reset-all": () =>
+      ipcRenderer.invoke("shortcuts:reset-all"),
+  },
+
+  /** AI Gateway — model listing and completions. */
+  ai: {
+    listModels: () =>
+      ipcRenderer.invoke("ai:listModels"),
+    complete: (messages: Array<{ role: string; content: string }>, options?: { model?: string; provider?: string; temperature?: number; maxTokens?: number }) =>
+      ipcRenderer.invoke("ai:complete", messages, options),
+    stream: (
+      messages: Array<{ role: string; content: string }>,
+      options?: { model?: string; provider?: string; temperature?: number; maxTokens?: number },
+    ): { subscribe: (onChunk: (chunk: { type: string; text?: string; usage?: { promptTokens: number; completionTokens: number; totalTokens: number }; error?: string }) => void) => () => void } => {
+      const streamId = `stream-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      // Start the stream on the main process
+      ipcRenderer.invoke("ai:stream", streamId, messages, options);
+      return {
+        subscribe: (onChunk) => {
+          const listener = (_event: unknown, id: string, chunk: { type: string; text?: string; usage?: { promptTokens: number; completionTokens: number; totalTokens: number }; error?: string }) => {
+            if (id === streamId) onChunk(chunk);
+          };
+          ipcRenderer.on("ai:stream:chunk", listener);
+          return () => ipcRenderer.off("ai:stream:chunk", listener);
+        },
+      };
+    },
+  },
+
   /** Plugin management — install, enable/disable, uninstall, execute commands. */
   plugin: {
     list: () =>
@@ -458,6 +647,12 @@ const artworksApi = {
       ipcRenderer.invoke("marketplace:featured", limit),
     recent: (limit?: number) =>
       ipcRenderer.invoke("marketplace:recent", limit),
+    search: (query: string, limit?: number) =>
+      ipcRenderer.invoke("marketplace:search", query, limit),
+    popular: (limit?: number) =>
+      ipcRenderer.invoke("marketplace:popular", limit),
+    topRated: (limit?: number) =>
+      ipcRenderer.invoke("marketplace:top-rated", limit),
     getByUuid: (uuid: string) =>
       ipcRenderer.invoke("marketplace:getByUuid", uuid),
     getBySlug: (slug: string) =>

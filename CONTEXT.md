@@ -10,11 +10,16 @@ Build the operating system for AI-native filmmaking.
 
 Current Stage
 
-Production Workspace
+Production Operating System
 
 Current Priority
 
-AI Workspace
+Hardening — polish, performance, and the v1.0 release
+
+Phase 18 (Production Operating System) is complete. All eighteen roadmap
+phases are delivered. The project now moves from feature development into
+hardening: tooling fixes, performance work, and packaging toward a v1.0
+release.
 
 Current Architecture
 
@@ -41,6 +46,12 @@ Timeline Engine
 Studio Platform
 
 Node-Based Production
+
+Marketplace
+
+Enterprise (RBAC)
+
+Production Intelligence
 
 Current Design Principles
 
@@ -179,12 +190,48 @@ MiniMap. Command palette commands for workflow creation, listing, stats,
 and panel opening. Schema migration v6 with node_workflows table and
 JSON nodes/edges/viewport storage.
 
+Phase 15 (Marketplace) — complete.
+
+Schema, repository, IPC handlers, Marketplace panel with listing
+browsing, install/uninstall, search, and detail views. Command palette
+commands for marketplace search and panel opening. Schema migration v7
+with marketplace_listings, marketplace_installations, and
+marketplace_reviews tables.
+
+Phase 16 (Enterprise) — complete.
+
+Team, Role, Permission, and AuditLog repositories with RBAC. Enterprise
+panel with team management, role assignment, permission matrix, and
+audit log viewer. Schema migration v8 with teams, roles, permissions,
+team_members, team_roles, role_permissions, and audit_log tables.
+
+Phase 17 (Production Intelligence) — complete.
+
+ProductionIntelligenceRepository with 8 cross-repo analytics queries:
+productionHealth, activityMetrics, timelineAnalytics, entityAnalytics,
+aiUsageMetrics, teamProductivity, productionSummary. 7 IPC handlers.
+Production Intelligence Panel with 4-tab dashboard (Overview, Timeline,
+Team, AI). Command palette commands for panel opening and stats.
+
+Phase 18 (Production Operating System) — complete.
+
+Production lifecycle state machine (draft/active/review/published/
+archived) with transition guards. Notification center with real-time
+alerts and unread tracking. Backup & recovery (database export/import,
+crash recovery). System health dashboard (DB integrity, perf metrics).
+User preferences (API keys, theme, keyboard shortcuts) with theme system.
+SSE streaming AI chat, CRDT collaboration (Yjs + presence), visual
+knowledge graph, AI model registry, plugin marketplace polish, production
+export pipeline. Schema migrations v9–v10.
+
 Upcoming Work
 
-Phase 15 — Marketplace
+Hardening toward v1.0
 
-Phase 16 — Enterprise
+All eighteen roadmap phases are complete. The focus is now hardening:
 
-Phase 17 — Production Intelligence
-
-Phase 18 — Production Operating System
+- Native-module tooling (better-sqlite3 dual-ABI: Node default, Electron
+  via `pnpm rebuild:electron`) — see CONTRIBUTING.md.
+- Performance profiling and memory work.
+- Packaging (electron-builder) and auto-update.
+- Upgrade better-sqlite3 to v12 for Node 24 prebuilt binaries.

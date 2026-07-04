@@ -14,6 +14,20 @@ import { WorkspaceLayout } from "../workspace/index.js";
 /** Renderer event the "open settings" command dispatches (see commands.ts). */
 const OPEN_SETTINGS_EVENT = "artworks:open-settings";
 
+/** Map menu action IDs to command palette command IDs. */
+const ACTION_TO_COMMAND: Record<string, string> = {
+  "command-palette": "__palette__",
+  "toggle-theme": "app.toggle-theme",
+  "open-settings": "app.open-settings",
+  "new-production": "production:create",
+  "open-production": "production:open",
+  "search": "search:open",
+  "new-entity": "entity:create",
+  "toggle-sidebar": "workspace:toggle-sidebar",
+  "toggle-terminal": "workspace:toggle-terminal",
+  "save": "editor:save",
+};
+
 export function StudioShell() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const palette = useCommandPalette();
@@ -23,8 +37,27 @@ export function StudioShell() {
     void registerPluginCommands();
     const onOpenSettings = (): void => setSettingsOpen(true);
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);
-    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);
-  }, []);
+
+    // Listen for menu/shortcut actions from the main process and dispatch them.
+    const unsubMenu = window.artworks.menu.onAction((action) => {
+      if (action === "open-settings") {
+        setSettingsOpen(true);
+      } else if (action === "command-palette") {
+        palette.toggle();
+      } else {
+        // Map action to command ID and run it if registered.
+        const commandId = ACTION_TO_COMMAND[action];
+        if (commandId && commandId !== "__palette__") {
+          void palette.run(commandId);
+        }
+      }
+    });
+
+    return () => {
+      window.removeEventListener(OPEN_SETTINGS_EVENT, onOpenSettings);
+      unsubMenu();
+    };
+  }, [palette]);
 
   return (
     <div className="studio-shell studio-shell--workspace">

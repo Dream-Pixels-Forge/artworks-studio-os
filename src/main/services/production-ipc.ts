@@ -8,6 +8,7 @@
 import { ipcMain } from "electron";
 import { createLogger } from "@main/core/logger.js";
 import type { StudioDatabase } from "@main/database/db.js";
+import { ExportService } from "./export-service.js";
 import {
   ProjectRepository,
   AssetRepository,
@@ -67,6 +68,7 @@ import type {
   DashboardStatsDto,
 } from "@shared/production/production-dto.js";
 import type { EntityStatus } from "@shared/models/index.js";
+import { complete, stream, listModels, type AIMessage, type AICompletionOptions, type AIStreamChunk } from "./ai-gateway.js";
 
 const log = createLogger("ipc");
 const VALID_WORKFLOW_STATES: WorkflowState[] = ["idle", "running", "paused", "completed", "failed"];
@@ -91,6 +93,7 @@ let agentRepo: AgentRepository;
 let agentTaskRepo: AgentTaskRepository;
 let agentMsgRepo: AgentMessageRepository;
 let nodeWorkflowRepo: NodeWorkflowRepository;
+let exportSvc: ExportService;
 
 /** Register all production IPC handlers. Call once on app startup. */
 export function registerProductionIpc(db: StudioDatabase): void {
@@ -114,6 +117,7 @@ export function registerProductionIpc(db: StudioDatabase): void {
   agentTaskRepo = new AgentTaskRepository(db);
   agentMsgRepo = new AgentMessageRepository(db);
   nodeWorkflowRepo = new NodeWorkflowRepository(db);
+  exportSvc = new ExportService(db);
 
   // --- Projects ---
   ipcMain.handle("production:project:list", () => projectRepo.list() as ProjectDto[]);
@@ -199,6 +203,20 @@ export function registerProductionIpc(db: StudioDatabase): void {
   );
   ipcMain.handle("production:graph:disconnect", (_e, source: string, target: string, type: string) =>
     graphRepo.disconnect(source, target, type),
+  );
+  // --- Knowledge Graph (Phase 19) ---
+  ipcMain.handle("production:graph:all", () => ({
+    entities: graphRepo.allGraphEntities(),
+    relationships: graphRepo.allRelationships(),
+  }));
+  ipcMain.handle("production:graph:neighbors", (_e, uuid: string) =>
+    graphRepo.neighbors(uuid) as Relationship[],
+  );
+  ipcMain.handle("production:graph:shortest-path", (_e, from: string, to: string) =>
+    graphRepo.shortestPath(from, to),
+  );
+  ipcMain.handle("production:graph:subgraph", (_e, uuid: string, maxHops?: number) =>
+    graphRepo.subgraph(uuid, maxHops),
   );
 
   // --- Version History (Phase 3) ---
@@ -495,4 +513,34 @@ export function registerProductionIpc(db: StudioDatabase): void {
   ipcMain.handle("production:nodeWorkflow:listByStatus", (_e, status: "draft" | "active" | "archived") =>
     nodeWorkflowRepo.listByStatus(status));
   ipcMain.handle("production:nodeWorkflow:stats", () => nodeWorkflowRepo.stats());
+
+  // --- AI Gateway (Phase 19) ---
+  ipcMain.handle("ai:listModels", () => listModels());
+  ipcMain.handle("ai:complete", async (_e, messages: AIMessage[], options?: AICompletionOptions) => {
+    try {
+      return await complete(messages, options);
+    } catch (err) {
+      log.error("AI completion failed", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("ai:stream", async (e, streamId: string, messages: AIMessage[], options?: AICompletionOptions) => {
+    try {
+      const gen = stream(messages, options);
+      for await (const chunk of gen) {
+        e.sender.send("ai:stream:chunk", streamId, chunk);
+      }
+      return { ok: true };
+    } catch (err) {
+      log.error("AI stream failed", err);
+      const errorChunk: AIStreamChunk = { type: "error", error: err instanceof Error ? err.message : String(err) };
+      e.sender.send("ai:stream:chunk", streamId, errorChunk);
+      return { ok: false, error: errorChunk.error };
+    }
+  });
+
+  // --- Production Export (Phase 19) ---
+  ipcMain.handle("export:production", async (_e, options: { format: "json" | "markdown"; entityTypes?: string[]; includeGraph?: boolean; includeTimeline?: boolean; includeComments?: boolean }) => {
+    return exportSvc.exportProduction(options);
+  });
 }
