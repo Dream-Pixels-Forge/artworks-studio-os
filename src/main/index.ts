@@ -158,7 +158,10 @@ app.on("before-quit", (event) => {
         pluginRuntime = undefined;
       }
       // Flush and destroy CRDT documents before closing the database.
-      await crdtService.shutdown();
+      if (crdtService) {
+        await crdtService.shutdown();
+        crdtService = undefined;
+      }
       // Close the database AFTER plugin and CRDT teardown so handlers
       // can still touch the DB if they need to.
       database?.close();

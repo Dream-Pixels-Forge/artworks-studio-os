@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync, copyFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type Database from "better-sqlite3";
+import type { StudioDatabase } from "@main/database/db.js";
 
 export interface BackupMetadata {
   uuid: string;
@@ -31,9 +31,9 @@ const MAX_BACKUPS = 20;
 const MAX_RECOVERY_POINTS = 5;
 
 export class BackupService {
-  private db: Database.Database;
+  private db: StudioDatabase;
 
-  constructor(db: Database.Database) {
+  constructor(db: StudioDatabase) {
     this.db = db;
     this.ensureDirectories();
   }

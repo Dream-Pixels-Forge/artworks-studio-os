@@ -2,7 +2,7 @@
  * Notification repository — CRUD + unread tracking + stats for the
  * Notification Center (Phase 18.2).
  */
-import type Database from "better-sqlite3";
+import type { StudioDatabase } from "../db.js";
 
 export type NotificationType =
   | "info" | "warning" | "error" | "success"
@@ -50,9 +50,9 @@ export interface NotificationStats {
 }
 
 export class NotificationRepository {
-  private db: Database.Database;
+  private db: StudioDatabase;
 
-  constructor(db: Database.Database) {
+  constructor(db: StudioDatabase) {
     this.db = db;
   }
 

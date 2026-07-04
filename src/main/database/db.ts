@@ -63,6 +63,24 @@ export class StudioDatabase implements MigrationDatabase {
     return this.db.transaction(fn)();
   }
 
+  /**
+   * The underlying file path (or `:memory:`). Used by backup/restore to
+   * locate the database file on disk. Mirrors better-sqlite3's `name`.
+   */
+  get name(): string {
+    return this.db.name;
+  }
+
+  /**
+   * Raw prepared-statement access. Reserved for services that need the
+   * full better-sqlite3 `Statement` API (e.g. `.run()` return values with
+   * `changes`/`lastInsertRowid`). Prefer `exec`/`get`/`all` for plain
+   * queries.
+   */
+  prepare(sql: string): Database.Statement {
+    return this.db.prepare(sql);
+  }
+
   /** Rebuild the FTS5 search index from the entities table. Maintenance only. */
   rebuildSearchIndex(): void {
     this.exec("INSERT INTO entities_fts(entities_fts) VALUES ('rebuild')");

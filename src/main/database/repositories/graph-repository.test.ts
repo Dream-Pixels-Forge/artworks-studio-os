@@ -11,19 +11,16 @@ import { MIGRATIONS } from "../migrations.js";
 import {
   GraphRepository,
   EntityRepository,
-  ProjectRepository,
 } from "./index.js";
 
 let db: StudioDatabase;
 let graph: GraphRepository;
 let entities: EntityRepository;
-let _projects: ProjectRepository;
 
 beforeAll(async () => {
   db = await StudioDatabase.openInMemory(MIGRATIONS);
   graph = new GraphRepository(db);
   entities = new EntityRepository(db);
-  _projects = new ProjectRepository(db);
 });
 
 afterAll(() => {

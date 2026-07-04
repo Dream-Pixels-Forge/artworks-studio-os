@@ -159,7 +159,7 @@ describe("MarketplaceRepository — getByUuid / getBySlug", () => {
   });
 
   it("retrieves a listing by slug", () => {
-    const _created = publish({ slug: "slug-lookup", name: "Slug Lookup" });
+    publish({ slug: "slug-lookup", name: "Slug Lookup" });
     const found = repo.getBySlug("slug-lookup");
 
     expect(found).toBeDefined();

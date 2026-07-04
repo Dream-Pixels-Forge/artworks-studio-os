@@ -3,10 +3,10 @@
  * crash recovery, and stats. Phase 18.3.
  */
 import { ipcMain } from "electron";
-import type Database from "better-sqlite3";
+import type { StudioDatabase } from "@main/database/db.js";
 import { BackupService } from "./backup-service.js";
 
-export function registerBackupIpc(db: Database.Database): void {
+export function registerBackupIpc(db: StudioDatabase): void {
   const service = new BackupService(db);
 
   ipcMain.handle("backup:create", (_event, type?: string, label?: string) => {

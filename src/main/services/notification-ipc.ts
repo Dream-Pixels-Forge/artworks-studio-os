@@ -3,11 +3,11 @@
  * Phase 18.2: Notification Center.
  */
 import { ipcMain } from "electron";
-import type Database from "better-sqlite3";
+import type { StudioDatabase } from "@main/database/db.js";
 import { NotificationRepository } from "@main/database/repositories/notification-repository.js";
 import type { NotificationType } from "@main/database/repositories/notification-repository.js";
 
-export function registerNotificationIpc(db: Database.Database): void {
+export function registerNotificationIpc(db: StudioDatabase): void {
   const repo = new NotificationRepository(db);
 
   ipcMain.handle("notification:create", (_event, input: {

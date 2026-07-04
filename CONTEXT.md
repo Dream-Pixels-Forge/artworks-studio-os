@@ -14,7 +14,12 @@ Production Operating System
 
 Current Priority
 
-Phase 18 — Production Lifecycle & System Integration
+Hardening — polish, performance, and the v1.0 release
+
+Phase 18 (Production Operating System) is complete. All eighteen roadmap
+phases are delivered. The project now moves from feature development into
+hardening: tooling fixes, performance work, and packaging toward a v1.0
+release.
 
 Current Architecture
 
@@ -208,15 +213,25 @@ aiUsageMetrics, teamProductivity, productionSummary. 7 IPC handlers.
 Production Intelligence Panel with 4-tab dashboard (Overview, Timeline,
 Team, AI). Command palette commands for panel opening and stats.
 
+Phase 18 (Production Operating System) — complete.
+
+Production lifecycle state machine (draft/active/review/published/
+archived) with transition guards. Notification center with real-time
+alerts and unread tracking. Backup & recovery (database export/import,
+crash recovery). System health dashboard (DB integrity, perf metrics).
+User preferences (API keys, theme, keyboard shortcuts) with theme system.
+SSE streaming AI chat, CRDT collaboration (Yjs + presence), visual
+knowledge graph, AI model registry, plugin marketplace polish, production
+export pipeline. Schema migrations v9–v10.
+
 Upcoming Work
 
-Phase 18 — Production Operating System
+Hardening toward v1.0
 
-Final integration phase that unifies all subsystems into a cohesive OS experience.
+All eighteen roadmap phases are complete. The focus is now hardening:
 
-Scope:
-- Production Lifecycle State Machine — formal states (draft → active → review → published → archived) with transition rules and guards
-- Notification Center — centralized notification management, real-time alerts, unread tracking, cross-panel event bus
-- Backup & Recovery — database backup/restore, production export/import, crash recovery
-- System Health Dashboard — database integrity checks, performance metrics, storage usage
-- User Preferences — cross-session settings, API key management, theme selection, keyboard shortcuts
+- Native-module tooling (better-sqlite3 dual-ABI: Node default, Electron
+  via `pnpm rebuild:electron`) — see CONTRIBUTING.md.
+- Performance profiling and memory work.
+- Packaging (electron-builder) and auto-update.
+- Upgrade better-sqlite3 to v12 for Node 24 prebuilt binaries.
