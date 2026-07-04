@@ -1,204 +1,298 @@
-/**
- * Workspace layout styles.
- *
- * Dockable panel arrangement: rail + panel content (left), center
- * (tabs + content), optional bottom and right. All colors from tokens.
+/*
+ * Workspace styles — docking surface, splitters, tab groups, workspace bar.
+ * All colors/sizes come from design-token CSS custom properties; no hardcoded
+ * values (per docs/design-system.md).
  */
 
+/* ---- Top-level workspace region ---- */
 .workspace {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  min-height: 0;
-}
-
-/* --- Left sidebar: icon rail + panel content --- */
-
-.workspace__sidebar--left {
-  width: 320px;
-  display: flex;
-  flex-direction: row;
-  border-right: 1px solid var(--color-border);
-  background: var(--color-surface);
-  min-width: 0;
-}
-
-.workspace__rail {
-  width: 40px;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding-top: var(--space-2);
-  gap: var(--space-1);
-  border-right: 1px solid var(--color-border);
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--color-bg);
 }
 
-.workspace__rail-btn {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
+.workspace__surface {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+/* ---- Workspace bar (named-workspace switcher) ---- */
+.workspace-bar {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  border: none;
+  gap: var(--space-1, 4px);
+  padding: 0 var(--space-2, 8px);
+  height: 34px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  overflow-x: auto;
+}
+
+.workspace-bar__chip {
+  appearance: none;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 16px;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm, 3px);
   cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: background-color 0.1s ease;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
-.workspace__rail-btn:hover {
+.workspace-bar__chip:hover {
   background: var(--color-surface-muted);
   color: var(--color-text);
 }
 
-.workspace__rail-btn--active {
-  color: var(--color-accent);
-  background: var(--color-surface-muted);
+.workspace-bar__chip--active {
+  background: var(--color-accent);
+  color: var(--color-bg);
 }
 
-.workspace__panel-content {
-  flex: 1;
-  overflow: auto;
-  min-width: 0;
-}
-
-/* --- Center area: tabs + content + optional bottom --- */
-
-.workspace__main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.workspace__center {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.workspace__center-content {
-  flex: 1;
-  overflow: auto;
-  padding: var(--space-4);
-}
-
-/* --- Tab bar (center, right, bottom) --- */
-
-.workspace__tabs {
-  display: flex;
-  flex-direction: row;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
-  min-height: 32px;
-}
-
-.workspace__tab {
-  padding: var(--space-2) var(--space-3);
-  border: none;
+.workspace-bar__add {
+  appearance: none;
+  border: 1px dashed var(--color-border);
   background: transparent;
   color: var(--color-text-muted);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm, 3px);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
   white-space: nowrap;
 }
 
-.workspace__tab:hover {
+.workspace-bar__add:hover {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.workspace-bar__save {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+}
+
+.workspace-bar__input {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 3px);
+  width: 160px;
+}
+
+.workspace-bar__input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.workspace-bar__save-btn {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border: none;
+  border-radius: var(--radius-sm, 3px);
+  cursor: pointer;
+}
+
+.workspace-bar__save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- SplitView (resizable panes + splitter handles) ---- */
+.split-view {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.split-view--row {
+  flex-direction: row;
+}
+
+.split-view--column {
+  flex-direction: column;
+}
+
+.split-view__pane {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The draggable grabber between two panes. */
+.split-view__handle {
+  flex: 0 0 5px;
+  background: var(--color-border);
+  position: relative;
+  z-index: 2;
+  transition: background-color 120ms ease;
+}
+
+.split-view__handle:hover,
+.split-view__handle:active {
+  background: var(--color-accent);
+}
+
+/* Row split → vertical grabber (drag left↔right). */
+.split-view__handle--col {
+  cursor: col-resize;
+  width: 5px;
+  height: 100%;
+}
+
+/* Column split → horizontal grabber (drag up↕down). */
+.split-view__handle--row {
+  cursor: row-resize;
+  height: 5px;
+  width: 100%;
+}
+
+/* ---- TabGroup (tab strip + active panel) ---- */
+.tab-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--color-surface);
+  position: relative;
+}
+
+.tab-group__strip {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  height: 32px;
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+
+.tab-group__tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-right: 1px solid var(--color-border);
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.tab-group__tab:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.tab-group__tab--active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+}
+
+.tab-group__icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.tab-group__label {
+  pointer-events: none;
+}
+
+.tab-group__close {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  border-radius: var(--radius-sm, 3px);
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+
+.tab-group__tab:hover .tab-group__close,
+.tab-group__tab--active .tab-group__close {
+  opacity: 1;
+}
+
+.tab-group__close:hover {
   color: var(--color-text);
   background: var(--color-surface-muted);
 }
 
-.workspace__tab--active {
-  color: var(--color-text);
-  border-bottom-color: var(--color-accent);
-}
-
-/* --- Bottom panel --- */
-
-.workspace__bottom {
-  height: 200px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.workspace__bottom-content {
-  flex: 1;
+.tab-group__content {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
-  padding: var(--space-3);
-}
-
-/* --- Right sidebar --- */
-
-.workspace__sidebar--right {
-  width: 280px;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--color-border);
-  background: var(--color-surface);
-  flex-shrink: 0;
 }
 
-/* --- Empty state --- */
-
-.workspace__empty {
+.tab-group__empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  flex: 1 1 auto;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  text-align: center;
+  font-size: 13px;
 }
 
-/* --- Welcome panel --- */
-
-.workspace__welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-6);
-  text-align: center;
+/* ---- Drop-zone affordances (drag-to-dock) ---- */
+/* Highlight the region the panel will dock into while dragging over it. */
+.tab-group--drop-center::after,
+.tab-group--drop-left::after,
+.tab-group--drop-right::after,
+.tab-group--drop-top::after,
+.tab-group--drop-bottom::after {
+  content: "";
+  position: absolute;
+  background: var(--color-accent);
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 80ms ease;
 }
 
-.workspace__welcome-brand {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.tab-group--drop-center::after {
+  inset: 0;
 }
 
-.workspace__welcome-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.02em;
+.tab-group--drop-left::after {
+  inset: 0 50% 0 0;
 }
 
-.workspace__welcome-tagline {
-  font-size: var(--font-size-lg);
-  color: var(--color-accent);
-  font-weight: var(--font-weight-medium);
+.tab-group--drop-right::after {
+  inset: 0 0 0 50%;
 }
 
-.workspace__welcome-status {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+.tab-group--drop-top::after {
+  inset: 0 0 50% 0;
 }
 
-.workspace__welcome-status kbd {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0 var(--space-1);
+.tab-group--drop-bottom::after {
+  inset: 50% 0 0 0;
 }

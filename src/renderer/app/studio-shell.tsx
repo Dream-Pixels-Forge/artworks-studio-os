@@ -13,6 +13,9 @@ import { WorkspaceLayout } from "../workspace/index.js";
 
 /** Renderer event the "open settings" command dispatches (see commands.ts). */
 const OPEN_SETTINGS_EVENT = "artworks:open-settings";
+/** Renderer events the workspace layout listens for (toggle sidebar/bottom). */
+const TOGGLE_SIDEBAR_EVENT = "artworks:toggle-sidebar";
+const TOGGLE_BOTTOM_EVENT = "artworks:toggle-bottom";
 
 /** Map menu action IDs to command palette command IDs. */
 const ACTION_TO_COMMAND: Record<string, string> = {
@@ -44,6 +47,11 @@ export function StudioShell() {
         setSettingsOpen(true);
       } else if (action === "command-palette") {
         palette.toggle();
+      } else if (action === "toggle-sidebar") {
+        // The layout listens for this event to collapse/expand the left region.
+        window.dispatchEvent(new Event(TOGGLE_SIDEBAR_EVENT));
+      } else if (action === "toggle-terminal") {
+        window.dispatchEvent(new Event(TOGGLE_BOTTOM_EVENT));
       } else {
         // Map action to command ID and run it if registered.
         const commandId = ACTION_TO_COMMAND[action];

@@ -95,7 +95,17 @@ Phase 0 (Foundation) — complete.
 
 Phase 1 (Desktop Foundation) — complete.
 
-Workspace/docking system with panel registry, layout slots, persisted state.
+Docking Framework (#6) + Workspace System (#5) now fully delivered. The
+pre-docking 4-slot scaffold was upgraded to a recursive split/tab tree
+model: resizable splitters (pointer-event drag handles), tab groups with
+drag-to-dock onto left/right/top/bottom/center edges, tab close, and a pure
+layout reducer. Named workspaces (built-in "Storyboarding"/"Editing"/
+"Production" presets + user-saved arrangements) with switch/save-as via the
+command palette and a workspace bar. Legacy `{slots, active}` localStorage
+layouts are migrated to the tree on load. The dead `artworks:open-panel`
+events are now wired (the 10 command-palette open-panel commands work).
+Float/detach-into-window is deferred to a follow-up. ADR 0004 records the
+hand-rolled (no library) decision.
 
 Phase 2 (Production Workspace) — complete.
 
