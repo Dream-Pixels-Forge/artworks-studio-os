@@ -20,6 +20,13 @@ export interface AICompletionOptions {
   stream?: boolean;
 }
 
+/**
+ * Resolves an unmasked API key for a provider. Implemented by
+ * {@link ApiKeyService.getKey} (main process only); the gateway never
+ * touches the key file on disk, so there is a single source of truth.
+ */
+export type ApiKeyResolver = (provider: AIProviderId) => string | undefined;
+
 export interface AICompletionResult {
   content: string;
   model: string;
@@ -32,21 +39,6 @@ export interface AIStreamChunk {
   text?: string;
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
   error?: string;
-}
-
-import fs from "node:fs";
-import path from "node:path";
-
-function getApiKey(provider: AIProviderId): string | undefined {
-  try {
-    const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
-    const keyFile = path.join(home, ".artworks-studio", "settings", "api-keys.json");
-    if (!fs.existsSync(keyFile)) return undefined;
-    const keys = JSON.parse(fs.readFileSync(keyFile, "utf-8")) as Record<string, string>;
-    return keys[provider];
-  } catch {
-    return undefined;
-  }
 }
 
 function buildHeaders(provider: AIProviderId, apiKey: string): Record<string, string> {
@@ -147,13 +139,14 @@ function parseStreamLine(provider: AIProviderId, line: string): AIStreamChunk | 
 export async function complete(
   messages: AIMessage[],
   options: AICompletionOptions = {},
+  getKey: ApiKeyResolver,
 ): Promise<AICompletionResult> {
   const modelId = options.model ?? "gpt-4o-mini";
   const model = getModel(modelId);
   if (!model) throw new Error(`Unknown model: ${modelId}`);
 
   const provider = options.provider ?? model.provider;
-  const apiKey = getApiKey(provider);
+  const apiKey = getKey(provider);
   if (!apiKey && provider !== "ollama") {
     throw new Error(`No API key configured for ${provider}. Add it in Settings → API Keys.`);
   }
@@ -229,13 +222,14 @@ export async function complete(
 export async function* stream(
   messages: AIMessage[],
   options: AICompletionOptions = {},
+  getKey: ApiKeyResolver,
 ): AsyncGenerator<AIStreamChunk> {
   const modelId = options.model ?? "gpt-4o-mini";
   const model = getModel(modelId);
   if (!model) throw new Error(`Unknown model: ${modelId}`);
 
   const provider = options.provider ?? model.provider;
-  const apiKey = getApiKey(provider);
+  const apiKey = getKey(provider);
   if (!apiKey && provider !== "ollama") {
     throw new Error(`No API key configured for ${provider}. Add it in Settings → API Keys.`);
   }

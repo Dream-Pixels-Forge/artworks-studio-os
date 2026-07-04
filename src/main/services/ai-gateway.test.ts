@@ -1,16 +1,13 @@
 /**
  * AI Gateway tests.
  *
- * Uses a real temp directory for API key files (matching the settings-service
- * pattern) and mocks `fetch` for network calls. Verifies provider-specific
- * request shaping, response parsing, stream SSE line parsing, error handling,
- * and the "no API key" guard.
+ * Mocks `fetch` for network calls and supplies API keys via an injected
+ * resolver (mirroring how ApiKeyService.getKey feeds the gateway in prod).
+ * Verifies provider-specific request shaping, response parsing, stream SSE
+ * line parsing, error handling, and the "no API key" guard.
  */
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
-import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import type { AIMessage } from "./ai-gateway.js";
+import type { AIMessage, ApiKeyResolver } from "./ai-gateway.js";
 
 // ---------------------------------------------------------------------------
 // Logger stub — prevent log calls from polluting output.
@@ -26,12 +23,9 @@ const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 // ---------------------------------------------------------------------------
-// Temp directory for API keys
+// API key resolver — stands in for ApiKeyService.getKey in tests.
 // ---------------------------------------------------------------------------
-let homeDir: string;
-let keysDir: string;
-
-const FAKE_KEYS = {
+const FAKE_KEYS: Record<string, string> = {
   openai: "sk-test-openai",
   anthropic: "sk-ant-test",
   google: "AIzaSy-test-google",
@@ -41,21 +35,19 @@ const FAKE_KEYS = {
   ollama: "",
 };
 
-beforeAll(async () => {
-  homeDir = await mkdtemp(join(tmpdir(), "artworks-ai-gw-"));
-  keysDir = join(homeDir, ".artworks-studio", "settings");
-  await mkdir(keysDir, { recursive: true });
-  await writeFile(join(keysDir, "api-keys.json"), JSON.stringify(FAKE_KEYS));
+/** Resolver that returns a fake key per provider (undefined when absent). */
+const fakeKeyResolver: ApiKeyResolver = (provider) => FAKE_KEYS[provider];
+
+beforeAll(() => {
+  // no disk setup — keys come from the resolver
 });
 
-afterAll(async () => {
-  await rm(homeDir, { recursive: true, force: true });
+afterAll(() => {
+  // no temp dir to clean up
 });
 
 beforeEach(() => {
   mockFetch.mockReset();
-  // Point HOME at our temp dir so getApiKey finds the keys file.
-  process.env.HOME = homeDir;
 });
 
 afterEach(() => {
@@ -110,7 +102,7 @@ describe("complete()", () => {
     );
 
     const { complete } = await import("./ai-gateway.js");
-    const result = await complete([systemMsg, userMsg], { model: "gpt-4o-mini" });
+    const result = await complete([systemMsg, userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver);
 
     const [url, init] = mockFetch.mock.calls[0]!;
     expect(url).toBe("https://api.openai.com/v1/chat/completions");
@@ -145,7 +137,7 @@ describe("complete()", () => {
     const { complete } = await import("./ai-gateway.js");
     const result = await complete([systemMsg, userMsg], {
       model: "claude-sonnet-4-20250514",
-    });
+    }, fakeKeyResolver);
 
     const [url, init] = mockFetch.mock.calls[0]!;
     expect(url).toBe("https://api.anthropic.com/v1/messages");
@@ -185,7 +177,7 @@ describe("complete()", () => {
     );
 
     const { complete } = await import("./ai-gateway.js");
-    const result = await complete([userMsg], { model: "gemini-2.0-flash" });
+    const result = await complete([userMsg], { model: "gemini-2.0-flash" }, fakeKeyResolver);
 
     const [url, init] = mockFetch.mock.calls[0]!;
     expect(url).toBe(
@@ -223,6 +215,7 @@ describe("complete()", () => {
         { role: "user", content: "Bye" },
       ],
       { model: "gemini-2.0-flash" },
+      fakeKeyResolver,
     );
 
     const body = JSON.parse(
@@ -243,7 +236,7 @@ describe("complete()", () => {
       model: "gpt-4o-mini",
       temperature: 0.2,
       maxTokens: 100,
-    });
+    }, fakeKeyResolver);
 
     const body = JSON.parse(
       (mockFetch.mock.calls[0]![1]!.body as string),
@@ -254,28 +247,18 @@ describe("complete()", () => {
 
   it("throws on unknown model", async () => {
     const { complete } = await import("./ai-gateway.js");
-    await expect(complete([userMsg], { model: "nonexistent-model" })).rejects.toThrow(
+    await expect(complete([userMsg], { model: "nonexistent-model" }, fakeKeyResolver)).rejects.toThrow(
       "Unknown model: nonexistent-model",
     );
   });
 
   it("throws when no API key is configured", async () => {
-    // Remove the keys file so getApiKey returns undefined.
-    const { unlinkSync } = await import("node:fs");
-    const keyPath = join(keysDir, "api-keys.json");
-    try {
-      unlinkSync(keyPath);
-    } catch {
-      /* ignore */
-    }
-
     const { complete } = await import("./ai-gateway.js");
-    await expect(complete([userMsg], { model: "gpt-4o-mini" })).rejects.toThrow(
+    // Resolver returns undefined for every provider — simulates "no keys set".
+    const noKeyResolver = () => undefined;
+    await expect(complete([userMsg], { model: "gpt-4o-mini" }, noKeyResolver)).rejects.toThrow(
       /No API key configured for openai/,
     );
-
-    // Restore keys file for subsequent tests.
-    await writeFile(keyPath, JSON.stringify(FAKE_KEYS));
   });
 
   it("does not require API key for ollama provider", async () => {
@@ -284,7 +267,7 @@ describe("complete()", () => {
     );
 
     const { complete } = await import("./ai-gateway.js");
-    const result = await complete([userMsg], { model: "llama3.1" });
+    const result = await complete([userMsg], { model: "llama3.1" }, fakeKeyResolver);
 
     expect(result.content).toBe("Local response");
     expect(result.provider).toBe("ollama");
@@ -294,7 +277,7 @@ describe("complete()", () => {
     mockFetch.mockResolvedValueOnce(errorResponse(401, "Unauthorized"));
 
     const { complete } = await import("./ai-gateway.js");
-    await expect(complete([userMsg], { model: "gpt-4o-mini" })).rejects.toThrow(
+    await expect(complete([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver)).rejects.toThrow(
       /AI request failed \(401\): Unauthorized/,
     );
   });
@@ -303,7 +286,7 @@ describe("complete()", () => {
     mockFetch.mockResolvedValueOnce(okJson({ choices: [{ message: { content: "" } }] }));
 
     const { complete } = await import("./ai-gateway.js");
-    await complete([userMsg]);
+    await complete([userMsg], {}, fakeKeyResolver);
 
     const body = JSON.parse(
       (mockFetch.mock.calls[0]![1]!.body as string),
@@ -332,7 +315,7 @@ describe("stream()", () => {
 
     const { stream } = await import("./ai-gateway.js");
     const chunks: Array<{ type: string; text?: string }> = [];
-    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" })) {
+    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver)) {
       chunks.push(chunk);
     }
 
@@ -361,7 +344,7 @@ describe("stream()", () => {
 
     const { stream } = await import("./ai-gateway.js");
     const chunks: Array<{ type: string; text?: string }> = [];
-    for await (const chunk of stream([userMsg], { model: "claude-sonnet-4-20250514" })) {
+    for await (const chunk of stream([userMsg], { model: "claude-sonnet-4-20250514" }, fakeKeyResolver)) {
       chunks.push(chunk);
     }
 
@@ -388,7 +371,7 @@ describe("stream()", () => {
 
     const { stream } = await import("./ai-gateway.js");
     const chunks: Array<{ type: string; text?: string }> = [];
-    for await (const chunk of stream([userMsg], { model: "deepseek-chat" })) {
+    for await (const chunk of stream([userMsg], { model: "deepseek-chat" }, fakeKeyResolver)) {
       chunks.push(chunk);
     }
 
@@ -414,7 +397,7 @@ describe("stream()", () => {
 
     const { stream } = await import("./ai-gateway.js");
     const chunks: Array<{ type: string; text?: string; usage?: unknown }> = [];
-    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" })) {
+    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver)) {
       chunks.push(chunk);
     }
 
@@ -432,7 +415,7 @@ describe("stream()", () => {
 
     const { stream } = await import("./ai-gateway.js");
     const chunks: Array<{ type: string; error?: string }> = [];
-    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" })) {
+    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver)) {
       chunks.push(chunk);
     }
 
@@ -448,7 +431,7 @@ describe("stream()", () => {
 
     const { stream } = await import("./ai-gateway.js");
     const chunks: Array<{ type: string; error?: string }> = [];
-    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" })) {
+    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver)) {
       chunks.push(chunk);
     }
 
@@ -472,7 +455,7 @@ describe("stream()", () => {
 
     const { stream } = await import("./ai-gateway.js");
     const chunks: Array<{ type: string; text?: string }> = [];
-    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" })) {
+    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver)) {
       chunks.push(chunk);
     }
 
@@ -485,26 +468,16 @@ describe("stream()", () => {
 
   it("throws on unknown model", async () => {
     const { stream } = await import("./ai-gateway.js");
-    const gen = stream([userMsg], { model: "nonexistent-model" });
+    const gen = stream([userMsg], { model: "nonexistent-model" }, fakeKeyResolver);
     await expect(gen.next()).rejects.toThrow("Unknown model: nonexistent-model");
   });
 
   it("throws when no API key is configured", async () => {
-    // Remove keys file.
-    const { unlinkSync } = await import("node:fs");
-    const keyPath = join(keysDir, "api-keys.json");
-    try {
-      unlinkSync(keyPath);
-    } catch {
-      /* ignore */
-    }
-
     const { stream } = await import("./ai-gateway.js");
-    const gen = stream([userMsg], { model: "gpt-4o-mini" });
+    // Resolver returns undefined for every provider — simulates "no keys set".
+    const noKeyResolver = () => undefined;
+    const gen = stream([userMsg], { model: "gpt-4o-mini" }, noKeyResolver);
     await expect(gen.next()).rejects.toThrow(/No API key configured for openai/);
-
-    // Restore.
-    await writeFile(keyPath, JSON.stringify(FAKE_KEYS));
   });
 
   it("sets stream: true in request body", async () => {
@@ -516,7 +489,7 @@ describe("stream()", () => {
     );
 
     const { stream } = await import("./ai-gateway.js");
-    for await (const _ of stream([userMsg], { model: "gpt-4o-mini" })) {
+    for await (const _ of stream([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver)) {
       /* drain */
     }
 
@@ -542,7 +515,7 @@ describe("stream()", () => {
 
     const { stream } = await import("./ai-gateway.js");
     const chunks: Array<{ type: string; text?: string }> = [];
-    for await (const chunk of stream([userMsg], { model: "llama3.1" })) {
+    for await (const chunk of stream([userMsg], { model: "llama3.1" }, fakeKeyResolver)) {
       chunks.push(chunk);
     }
 
@@ -562,7 +535,7 @@ describe("stream()", () => {
     );
 
     const { stream } = await import("./ai-gateway.js");
-    for await (const _ of stream([userMsg], { model: "gemini-2.0-flash" })) {
+    for await (const _ of stream([userMsg], { model: "gemini-2.0-flash" }, fakeKeyResolver)) {
       /* drain */
     }
 
@@ -597,5 +570,61 @@ describe("re-exports", () => {
   it("getModel returns undefined for unknown id", async () => {
     const { getModel } = await import("./ai-gateway.js");
     expect(getModel("totally-fake")).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration: ApiKeyService → gateway round-trip (regression test for #24).
+// Pins the contract that a key saved via the Preferences panel (ApiKeyService)
+// is visible to the AI gateway when the resolver is wired as in production.
+// ---------------------------------------------------------------------------
+
+describe("ApiKeyService integration", () => {
+  let home: string;
+
+  beforeAll(async () => {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    home = await mkdtemp(join(tmpdir(), "artworks-ai-gw-keys-"));
+    process.env["AW_HOME"] = home;
+  });
+
+  afterAll(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(home, { recursive: true, force: true });
+    delete process.env["AW_HOME"];
+  });
+
+  it("a key saved via ApiKeyService.setKey is found by complete()", async () => {
+    const { ApiKeyService } = await import("./api-key-service.js");
+    const { complete } = await import("./ai-gateway.js");
+
+    const service = new ApiKeyService();
+    await service.init();
+    await service.setKey("openai", "sk-round-trip");
+
+    // Before #24 the gateway read the key file with the wrong JSON shape and
+    // returned undefined here, failing with "No API key configured".
+    expect(service.getKey("openai")).toBe("sk-round-trip");
+
+    // Confirm complete() proceeds past the key check and reaches fetch,
+    // wired exactly as registerProductionIpc wires it in production.
+    mockFetch.mockResolvedValueOnce(
+      okJson({
+        choices: [{ message: { content: "ok" } }],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      }),
+    );
+
+    const result = await complete(
+      [{ role: "user", content: "hi" }],
+      { model: "gpt-4o-mini" },
+      (p) => service.getKey(p),
+    );
+    expect(result.content).toBe("ok");
+
+    const init = mockFetch.mock.calls[0]![1]! as { headers: Record<string, string> };
+    expect(init.headers["authorization"]).toBe("Bearer sk-round-trip");
   });
 });

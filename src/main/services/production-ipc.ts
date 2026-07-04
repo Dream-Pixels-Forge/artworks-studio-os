@@ -69,6 +69,7 @@ import type {
 } from "@shared/production/production-dto.js";
 import type { EntityStatus } from "@shared/models/index.js";
 import { complete, stream, listModels, type AIMessage, type AICompletionOptions, type AIStreamChunk } from "./ai-gateway.js";
+import type { ApiKeyService } from "./api-key-service.js";
 
 const log = createLogger("ipc");
 const VALID_WORKFLOW_STATES: WorkflowState[] = ["idle", "running", "paused", "completed", "failed"];
@@ -96,7 +97,7 @@ let nodeWorkflowRepo: NodeWorkflowRepository;
 let exportSvc: ExportService;
 
 /** Register all production IPC handlers. Call once on app startup. */
-export function registerProductionIpc(db: StudioDatabase): void {
+export function registerProductionIpc(db: StudioDatabase, apiKeyService: ApiKeyService): void {
   projectRepo = new ProjectRepository(db);
   assetRepo = new AssetRepository(db);
   docRepo = new DocumentRepository(db);
@@ -515,10 +516,12 @@ export function registerProductionIpc(db: StudioDatabase): void {
   ipcMain.handle("production:nodeWorkflow:stats", () => nodeWorkflowRepo.stats());
 
   // --- AI Gateway (Phase 19) ---
+  // Keys are resolved through ApiKeyService (single source of truth) so that
+  // keys saved via Settings → API Keys are visible to the gateway.
   ipcMain.handle("ai:listModels", () => listModels());
   ipcMain.handle("ai:complete", async (_e, messages: AIMessage[], options?: AICompletionOptions) => {
     try {
-      return await complete(messages, options);
+      return await complete(messages, options, (p) => apiKeyService.getKey(p));
     } catch (err) {
       log.error("AI completion failed", err);
       throw err;
@@ -526,7 +529,7 @@ export function registerProductionIpc(db: StudioDatabase): void {
   });
   ipcMain.handle("ai:stream", async (e, streamId: string, messages: AIMessage[], options?: AICompletionOptions) => {
     try {
-      const gen = stream(messages, options);
+      const gen = stream(messages, options, (p) => apiKeyService.getKey(p));
       for await (const chunk of gen) {
         e.sender.send("ai:stream:chunk", streamId, chunk);
       }

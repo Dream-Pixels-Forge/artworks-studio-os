@@ -86,8 +86,16 @@ app.whenReady().then(async () => {
   // Register the project explorer IPC handlers.
   registerExplorerHandlers();
 
-  // Register production IPC (project, asset, document, search).
-  registerProductionIpc(database);
+  // Phase 18.5: User Preferences — API keys + keyboard shortcuts.
+  // Created early so ApiKeyService is available to registerProductionIpc
+  // (the AI gateway resolves keys through it).
+  const apiKeyService = new ApiKeyService();
+  const shortcutsService = new ShortcutsService();
+  await apiKeyService.init();
+  await shortcutsService.init();
+
+  // Register production IPC (project, asset, document, search, AI gateway).
+  registerProductionIpc(database, apiKeyService);
 
   // Register plugin IPC (install, enable/disable, uninstall, executeCommand).
   registerPluginIpc(database, pluginRuntime);
@@ -116,11 +124,6 @@ app.whenReady().then(async () => {
   await crdtService.init();
   registerCollaborationIpc(crdtService, presenceService);
 
-  // Phase 18.5: User Preferences — API keys + keyboard shortcuts.
-  const apiKeyService = new ApiKeyService();
-  const shortcutsService = new ShortcutsService();
-  await apiKeyService.init();
-  await shortcutsService.init();
   registerApiKeyIpc(apiKeyService);
   registerShortcutsIpc(shortcutsService);
 
