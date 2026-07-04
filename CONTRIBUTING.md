@@ -90,6 +90,29 @@ pnpm test
 CI runs the same on Ubuntu and Windows. If it's red locally, it'll be red
 on GitHub.
 
+#### Native modules (better-sqlite3)
+
+`better-sqlite3` is a native module compiled to one binary that cannot
+satisfy two runtimes at once. The binding must match the ABI of whatever
+loads it:
+
+| Runtime | ABI | When |
+| --- | --- | --- |
+| `pnpm test` (vitest on system Node) | Node | default |
+| `pnpm dev` / `pnpm build` (Electron) | Electron | before launching the app |
+
+The **default state is Node** — so `pnpm test` always works out of the box.
+Two scripts flip the binding as needed:
+
+```
+pnpm rebuild:node      # Node ABI (run before pnpm test if you've been in Electron)
+pnpm rebuild:electron  # Electron ABI (run before pnpm dev / pnpm build)
+```
+
+Each rebuild recompiles native code and takes a minute or two on Windows.
+You only need to switch when moving between the two runtimes — running
+`pnpm test` twice in a row never needs a rebuild.
+
 ### 5. Open a pull request
 
 Push your branch and open a PR against `main`. The PR template will prompt
