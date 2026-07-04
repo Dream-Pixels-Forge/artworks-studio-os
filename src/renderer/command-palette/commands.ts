@@ -7,6 +7,7 @@
  */
 import { commandRegistry } from "./registry.js";
 import { loadTokens } from "../ui/tokens/index.js";
+import { listWorkspaces } from "../workspace/workspace-store.js";
 
 /** Renderer event the shell listens for to open the settings panel. */
 const OPEN_SETTINGS_EVENT = "artworks:open-settings";
@@ -43,6 +44,48 @@ export function registerBuiltinCommands(): void {
       window.dispatchEvent(new Event(OPEN_SETTINGS_EVENT));
     },
   });
+
+  // --- Workspace commands (Phase 1: Workspace System #5) ---
+  // Toggle the sidebar (left) / bottom panel regions.
+  commandRegistry.register({
+    id: "workspace:toggle-sidebar",
+    title: "View: Toggle Sidebar",
+    category: "View",
+    run: () => {
+      window.dispatchEvent(new Event("artworks:toggle-sidebar"));
+    },
+  });
+  commandRegistry.register({
+    id: "workspace:toggle-terminal",
+    title: "View: Toggle Bottom Panel",
+    category: "View",
+    run: () => {
+      window.dispatchEvent(new Event("artworks:toggle-bottom"));
+    },
+  });
+  // Save the current arrangement as a named workspace (prompts for a name).
+  commandRegistry.register({
+    id: "workspace:save-as",
+    title: "Workspace: Save Current As…",
+    category: "Workspace",
+    run: () => {
+      // Dispatched to the WorkspaceBar via a custom event with a flag so it
+      // opens its inline "save as" input.
+      window.dispatchEvent(new CustomEvent("artworks:workspace-save-as"));
+    },
+  });
+  // Switch to each named workspace (one command per saved workspace).
+  for (const ws of listWorkspaces()) {
+    const target = ws.id;
+    commandRegistry.register({
+      id: `workspace:switch:${target}`,
+      title: `Workspace: Switch to ${ws.name}`,
+      category: "Workspace",
+      run: () => {
+        window.dispatchEvent(new CustomEvent("artworks:workspace-switch", { detail: { id: target } }));
+      },
+    });
+  }
 
   // --- Timeline commands (Phase 10) ---
   commandRegistry.register({
