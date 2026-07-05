@@ -58,6 +58,12 @@ export interface TabNode {
   panels: string[];
   /** Index into `panels` of the visible tab. */
   activeIndex: number;
+  /**
+   * True when the user has collapsed this region via a "toggle sidebar/bottom"
+   * command. The group keeps its panels and tree position but renders nothing,
+   * so toggling back is lossless. Set/cleared only by the TOGGLE_REGION action.
+   */
+  hidden?: boolean;
 }
 
 /**

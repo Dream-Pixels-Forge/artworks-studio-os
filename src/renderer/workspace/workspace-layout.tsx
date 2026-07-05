@@ -13,8 +13,9 @@ import { useCallback, useEffect, useState } from "react";
 import { LayoutNodeView } from "./layout-node-view.js";
 import { WorkspaceBar } from "./workspace-bar.js";
 import { layoutReducer, type LayoutAction } from "./layout-reducer.js";
+import { registerWorkspaceSwitchCommands } from "../command-palette/index.js";
 import { panelRegistry } from "./registry.js";
-import { loadLayout, saveLayout, defaultWorkspaceRoot, reconcile, findSlotNode, findPanelNode } from "./workspace-state.js";
+import { loadLayout, saveLayout, defaultWorkspaceRoot, reconcile, findSlotNode, findPanelNode, wrapWithNewTab } from "./workspace-state.js";
 import {
   listWorkspaces,
   getActiveWorkspaceId,
@@ -31,9 +32,11 @@ const TOGGLE_SIDEBAR_EVENT = "artworks:toggle-sidebar";
 const TOGGLE_BOTTOM_EVENT = "artworks:toggle-bottom";
 
 export function WorkspaceLayout() {
-  // Seed built-in workspace presets on first run.
+  // Seed built-in workspace presets on first run, then refresh the palette's
+  // per-workspace switch commands so every preset is reachable immediately.
   useEffect(() => {
     seedBuiltinWorkspaces(panelRegistry.all());
+    registerWorkspaceSwitchCommands();
   }, []);
 
   const [root, setRoot] = useState<LayoutNode>(() => loadLayout());
@@ -71,20 +74,11 @@ export function WorkspaceLayout() {
     });
   }, []);
 
-  // Toggle (collapse/expand) the left or bottom region by id.
+  // Toggle (collapse/expand) a region by canonical slot. Implemented as a
+  // TOGGLE_REGION action that flips the `hidden` flag on the slot's first tab
+  // group; the group keeps its panels and tree position so it restores losslessly.
   const toggleRegion = useCallback((slot: WorkspaceSlot) => {
-    setRoot((prev) => {
-      const node = findSlotNode(prev, slot);
-      if (!node) return prev;
-      // Closing the active tab of a single-tab group effectively hides the
-      // region; for multi-tab groups we collapse to the first tab. We model
-      // "toggle off" as removing all but... actually simplest: collapse the
-      // group by removing it via a synthetic action is complex. Instead, emit
-      // a no-op for now and rely on splitter drag to resize. (A proper hide
-      // is a follow-up — needs a `hidden` flag on TabNode.)
-      void node;
-      return prev;
-    });
+    setRoot((prev) => layoutReducer(prev, { type: "TOGGLE_REGION", slot }));
   }, []);
 
   // Listen for open-panel / toggle events from the command palette and menu.
@@ -141,6 +135,9 @@ export function WorkspaceLayout() {
       setActiveWorkspace(id);
       setActiveId(id);
       setWorkspaces(listWorkspaces());
+      // A new workspace should appear in the palette immediately; re-register
+      // the per-workspace switch commands so the user can switch back to it.
+      registerWorkspaceSwitchCommands();
     },
     [root],
   );
@@ -159,17 +156,4 @@ export function WorkspaceLayout() {
       </div>
     </div>
   );
-}
-
-/**
- * Wrap an existing root in a split alongside a brand-new tab group for a slot
- * that has no node yet (used when opening a panel whose default slot is empty).
- * Mirrors the private helper in workspace-state.ts.
- */
-function wrapWithNewTab(root: LayoutNode, slot: WorkspaceSlot, panelId: string): LayoutNode {
-  const newTab = { id: `wrap-${slot}-${Date.now().toString(36)}`, type: "tab" as const, slot, panels: [panelId], activeIndex: 0 };
-  const direction = slot === "left" || slot === "right" ? "row" : "column";
-  const before = slot === "left";
-  const children = before ? [newTab, root] : [root, newTab];
-  return { id: `wrap-root-${Date.now().toString(36)}`, type: "split", direction, sizes: [0.25, 0.75], children };
 }

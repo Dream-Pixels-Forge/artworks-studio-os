@@ -25,6 +25,23 @@ export interface TabGroupProps {
 export function TabGroup({ node, panelDef, onAction, onDragStartPanel, onDragEndPanel }: TabGroupProps) {
   const [dragOverEdge, setDragOverEdge] = useState<DockEdge | null>(null);
 
+  // A toggled-hidden region renders only a slim placeholder bar; clicking it
+  // restores the group. The node keeps its panels and tree position so
+  // toggling back is lossless.
+  if (node.hidden) {
+    return (
+      <div
+        className={`tab-group tab-group--hidden tab-group--hidden-${node.slot}`}
+        role="group"
+        aria-label={`${node.slot} region (collapsed)`}
+        onClick={() => onAction({ type: "TOGGLE_REGION", slot: node.slot })}
+        title={`Show ${node.slot}`}
+      >
+        <span className="tab-group__restore" aria-hidden>＋</span>
+      </div>
+    );
+  }
+
   const activePanelId = node.panels[node.activeIndex] ?? node.panels[0] ?? null;
   const activeDef = activePanelId ? panelDef(activePanelId) : undefined;
 

@@ -7,13 +7,39 @@
  */
 import { commandRegistry } from "./registry.js";
 import { loadTokens } from "../ui/tokens/index.js";
-import { listWorkspaces } from "../workspace/workspace-store.js";
+import { listWorkspaces, seedBuiltinWorkspaces } from "../workspace/workspace-store.js";
+import { panelRegistry } from "../workspace/registry.js";
 
 /** Renderer event the shell listens for to open the settings panel. */
 const OPEN_SETTINGS_EVENT = "artworks:open-settings";
 
+/**
+ * (Re)register one `workspace:switch:<id>` command per saved workspace.
+ * Idempotent — the registry upserts on conflict — so it's safe to call after
+ * every workspace add/save/delete. Without this, workspaces created after
+ * initial command registration would have no palette entry until reload.
+ */
+export function registerWorkspaceSwitchCommands(): void {
+  for (const ws of listWorkspaces()) {
+    const target = ws.id;
+    commandRegistry.register({
+      id: `workspace:switch:${target}`,
+      title: `Workspace: Switch to ${ws.name}`,
+      category: "Workspace",
+      run: () => {
+        window.dispatchEvent(new CustomEvent("artworks:workspace-switch", { detail: { id: target } }));
+      },
+    });
+  }
+}
+
 /** Register built-in commands. Safe to call repeatedly (idempotent). */
 export function registerBuiltinCommands(): void {
+  // Seed built-in workspace presets first so the per-workspace switch commands
+  // below have something to iterate. The store is idempotent, so a child
+  // component (WorkspaceLayout) calling this again later is a no-op. This
+  // removes the implicit ordering dependency on React's effect ordering.
+  seedBuiltinWorkspaces(panelRegistry.all());
   commandRegistry.register({
     id: "app.reload-tokens",
     title: "Reload design tokens",
@@ -74,18 +100,9 @@ export function registerBuiltinCommands(): void {
       window.dispatchEvent(new CustomEvent("artworks:workspace-save-as"));
     },
   });
-  // Switch to each named workspace (one command per saved workspace).
-  for (const ws of listWorkspaces()) {
-    const target = ws.id;
-    commandRegistry.register({
-      id: `workspace:switch:${target}`,
-      title: `Workspace: Switch to ${ws.name}`,
-      category: "Workspace",
-      run: () => {
-        window.dispatchEvent(new CustomEvent("artworks:workspace-switch", { detail: { id: target } }));
-      },
-    });
-  }
+  // Switch to each named workspace (one command per saved workspace). Refresh
+  // whenever the set of workspaces changes (save/delete) so new ones appear.
+  registerWorkspaceSwitchCommands();
 
   // --- Timeline commands (Phase 10) ---
   commandRegistry.register({

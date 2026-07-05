@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { layoutReducer, __resetNodeIdCounter, type LayoutAction } from "./layout-reducer.js";
-import type { LayoutNode } from "./types.js";
+import type { LayoutNode, TabNode } from "./types.js";
 
 /** Build a small tab node for tests. */
 function tab(id: string, panels: string[], activeIndex = 0): LayoutNode {
@@ -139,5 +139,91 @@ describe("layoutReducer", () => {
       expect((inner.children[0] as { panels: string[] }).panels).toContain("x");
       expect((inner.children[1] as { panels: string[] }).panels).toContain("b");
     });
+
+    // Regression: dragging a group's only tab onto one of that group's own
+    // edges used to delete the panel (target was pruned before the dock).
+    it("does not lose a panel when its only group is the target of an edge drop", () => {
+      const root: LayoutNode = {
+        id: "s1",
+        type: "split",
+        direction: "row",
+        sizes: [0.5, 0.5],
+        children: [tab("g1", ["a"]), tab("g2", ["b"])],
+      };
+      // Move `a` (the only panel in g1) onto g1's right edge.
+      const next = reduce(root, { type: "MOVE_PANEL", panelId: "a", targetNodeId: "g1", edge: "right" });
+      const ids = collectPanelIds(next);
+      // a must survive — it cannot be silently dropped.
+      expect(ids).toContain("a");
+      expect(ids).toContain("b");
+    });
+
+    it("does not lose a panel when dragging onto an edge of a sibling that empties", () => {
+      // g1 has only `a`; we move `a` onto g2's left edge — g1 empties, but `a`
+      // must end up in the new split next to g2, not dropped.
+      const root: LayoutNode = {
+        id: "s1",
+        type: "split",
+        direction: "row",
+        sizes: [0.5, 0.5],
+        children: [tab("g1", ["a"]), tab("g2", ["b"])],
+      };
+      const next = reduce(root, { type: "MOVE_PANEL", panelId: "a", targetNodeId: "g2", edge: "left" });
+      expect(collectPanelIds(next).sort()).toEqual(["a", "b"]);
+    });
+  });
+
+  describe("TOGGLE_REGION", () => {
+    it("sets hidden=true on the first group matching the slot", () => {
+      const root: LayoutNode = {
+        id: "s1",
+        type: "split",
+        direction: "column",
+        sizes: [0.7, 0.3],
+        children: [
+          { id: "g1", type: "tab", slot: "center", panels: ["a"], activeIndex: 0 },
+          { id: "g2", type: "tab", slot: "bottom", panels: ["b"], activeIndex: 0 },
+        ],
+      };
+      const next = reduce(root, { type: "TOGGLE_REGION", slot: "bottom" });
+      const bottom = ((next as { children: LayoutNode[] }).children[1]) as TabNode;
+      expect(bottom.hidden).toBe(true);
+    });
+
+    it("toggles back to visible on a second dispatch", () => {
+      const root: LayoutNode = {
+        id: "g1",
+        type: "tab",
+        slot: "left",
+        panels: ["a"],
+        activeIndex: 0,
+      };
+      const hidden = layoutReducer(root, { type: "TOGGLE_REGION", slot: "left" }) as TabNode;
+      expect(hidden.hidden).toBe(true);
+      const visible = layoutReducer(hidden, { type: "TOGGLE_REGION", slot: "left" }) as TabNode;
+      expect(visible.hidden).toBe(false);
+    });
+
+    it("is a no-op when no group matches the slot", () => {
+      const root: LayoutNode = { id: "g1", type: "tab", slot: "center", panels: ["a"], activeIndex: 0 };
+      const next = layoutReducer(root, { type: "TOGGLE_REGION", slot: "bottom" });
+      expect(next).toEqual(root);
+    });
+
+    it("preserves panel ids through toggle so restore is lossless", () => {
+      const root: LayoutNode = { id: "g1", type: "tab", slot: "left", panels: ["a", "b", "c"], activeIndex: 2 };
+      const hidden = reduce(root, { type: "TOGGLE_REGION", slot: "left" }) as TabNode;
+      const visible = reduce(hidden, { type: "TOGGLE_REGION", slot: "left" }) as TabNode;
+      expect(visible.panels).toEqual(["a", "b", "c"]);
+      expect(visible.activeIndex).toBe(2);
+    });
   });
 });
+
+// ---- helpers ----
+
+/** Collect every panel id referenced anywhere in the tree. */
+function collectPanelIds(node: LayoutNode): string[] {
+  if (node.type === "tab") return [...node.panels];
+  return node.children.flatMap(collectPanelIds);
+}

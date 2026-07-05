@@ -22,6 +22,7 @@ import type {
 } from "./types.js";
 import { isSplitNode, isTabNode, WORKSPACE_SLOTS } from "./types.js";
 import { panelRegistry } from "./registry.js";
+import { layoutReducer, MIN_PANE_SIZE } from "./layout-reducer.js";
 
 const ACTIVE_LAYOUT_KEY = "artworks:workspace-layout";
 
@@ -248,10 +249,9 @@ function splitNode(id: string, direction: SplitNode["direction"], sizes: number[
 
 /** Rescale to `count` entries (pad/truncate with even shares), each >= floor. */
 function renormalize(sizes: number[], count: number): number[] {
-  const floor = 0.05;
   if (sizes.length === count) {
     const sum = sizes.reduce((a, b) => a + b, 0) || 1;
-    return sizes.map((s) => Math.max(floor, s / sum));
+    return sizes.map((s) => Math.max(MIN_PANE_SIZE, s / sum));
   }
   return Array.from({ length: count }, () => 1 / count);
 }
@@ -276,19 +276,12 @@ export function togglePanel(root: LayoutNode, panelId: string, registry: Readonl
   // If it's already somewhere, remove it (CLOSE_TAB semantics).
   const existing = findPanelNode(root, panelId);
   if (existing) {
-    // Reuse reducer-style removal by synthesizing a close action via the
-    // reducer module — imported lazily to avoid a circular import.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { layoutReducer } = require("./layout-reducer.js") as typeof import("./layout-reducer.js");
-    const next = layoutReducer(root, { type: "CLOSE_TAB", nodeId: existing.id, panelId });
-    return next;
+    return layoutReducer(root, { type: "CLOSE_TAB", nodeId: existing.id, panelId });
   }
   // Otherwise add it to its default slot: find or create a tab group there.
   const def = registry.find((p) => p.id === panelId);
   if (!def) return root;
   const target = findSlotNode(root, def.defaultSlot);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { layoutReducer } = require("./layout-reducer.js") as typeof import("./layout-reducer.js");
   if (target) {
     return layoutReducer(root, { type: "MOVE_PANEL", panelId, targetNodeId: target.id, edge: "center" });
   }
@@ -303,8 +296,6 @@ export function togglePanel(root: LayoutNode, panelId: string, registry: Readonl
 export function setActivePanel(root: LayoutNode, panelId: string): LayoutNode {
   const node = findPanelNode(root, panelId);
   if (!node) return root;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { layoutReducer } = require("./layout-reducer.js") as typeof import("./layout-reducer.js");
   return layoutReducer(root, { type: "SET_ACTIVE", nodeId: node.id, panelId });
 }
 
@@ -333,7 +324,7 @@ export function findSlotNode(root: LayoutNode, slot: WorkspaceSlot): TabNode | n
 }
 
 /** Wrap an existing root in a split alongside a brand-new tab group. */
-function wrapWithNewTab(root: LayoutNode, slot: WorkspaceSlot, panelId: string): LayoutNode {
+export function wrapWithNewTab(root: LayoutNode, slot: WorkspaceSlot, panelId: string): LayoutNode {
   const newTab: TabNode = { id: `wrap-${slot}-${Date.now().toString(36)}`, type: "tab", slot, panels: [panelId], activeIndex: 0 };
   // Dock the new tab to the left/top of the existing root.
   const direction = slot === "left" || slot === "right" ? "row" : "column";
