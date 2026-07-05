@@ -261,6 +261,38 @@
   font-size: 13px;
 }
 
+/* ---- Collapsed region (toggle sidebar/bottom) ---- */
+/* A toggled-hidden group renders only this slim strip; clicking restores it. */
+.tab-group--hidden {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--color-surface-raised, #1e1e1e);
+}
+/* Vertical strip for left/right, horizontal for bottom. */
+.tab-group--hidden-left,
+.tab-group--hidden-right {
+  flex: 0 0 18px;
+  width: 18px;
+}
+.tab-group--hidden-bottom,
+.tab-group--hidden-top {
+  flex: 0 0 18px;
+  height: 18px;
+}
+.tab-group--hidden-center {
+  /* Center never toggles via the menu, but stay clickable if it ever does. */
+  flex: 1 1 auto;
+  min-height: 18px;
+}
+.tab-group__restore {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  user-select: none;
+}
+
 /* ---- Drop-zone affordances (drag-to-dock) ---- */
 /* Highlight the region the panel will dock into while dragging over it. */
 .tab-group--drop-center::after,

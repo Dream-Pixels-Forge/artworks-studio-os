@@ -10,6 +10,8 @@ import {
   reconcile,
   loadLayout,
   saveLayout,
+  togglePanel,
+  setActivePanel,
 } from "./workspace-state.js";
 import type { LayoutNode, PanelDefinition, LegacyWorkspaceLayoutState } from "./types.js";
 
@@ -150,6 +152,44 @@ describe("loadLayout / saveLayout", () => {
     localStorage.setItem("artworks:workspace-layout", "{not json");
     const loaded = loadLayout(FAKE_REGISTRY);
     expect(collectPanelIds(loaded).length).toBeGreaterThan(0);
+  });
+});
+
+// Regression: togglePanel / setActivePanel used to call require() in a Vite/ESM
+// renderer and threw ReferenceError at runtime. These tests exercise the path
+// end-to-end so the bug class can't silently come back (the unit gate passed
+// before because the functions were never invoked).
+describe("togglePanel", () => {
+  it("removes a panel that is already in the tree", () => {
+    const root: LayoutNode = {
+      id: "s",
+      type: "split",
+      direction: "row",
+      sizes: [0.5, 0.5],
+      children: [
+        { id: "g1", type: "tab", slot: "center", panels: ["welcome"], activeIndex: 0 },
+        { id: "g2", type: "tab", slot: "right", panels: ["assets"], activeIndex: 0 },
+      ],
+    };
+    const next = togglePanel(root, "welcome", FAKE_REGISTRY);
+    expect(collectPanelIds(next)).not.toContain("welcome");
+  });
+
+  it("adds a panel that is absent, into its default slot", () => {
+    // Single center group; toggling `assets` (defaultSlot right) wraps a split.
+    const root: LayoutNode = { id: "g1", type: "tab", slot: "center", panels: ["welcome"], activeIndex: 0 };
+    const next = togglePanel(root, "assets", FAKE_REGISTRY);
+    expect(collectPanelIds(next)).toEqual(expect.arrayContaining(["welcome", "assets"]));
+  });
+});
+
+describe("setActivePanel", () => {
+  it("changes the active tab within a group and returns the original root if absent", () => {
+    const root: LayoutNode = { id: "g1", type: "tab", slot: "center", panels: ["welcome", "assets"], activeIndex: 0 };
+    const next = setActivePanel(root, "assets") as { activeIndex: number };
+    expect(next.activeIndex).toBe(1);
+    const unchanged = setActivePanel(root, "ghost") as { activeIndex: number };
+    expect(unchanged.activeIndex).toBe(0);
   });
 });
 

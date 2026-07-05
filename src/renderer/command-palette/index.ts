@@ -2,5 +2,5 @@
 export { commandRegistry } from "./registry.js";
 export { CommandPalette } from "./CommandPalette.js";
 export { useCommandPalette } from "./use-command-palette.js";
-export { registerBuiltinCommands, registerPluginCommands } from "./commands.js";
+export { registerBuiltinCommands, registerPluginCommands, registerWorkspaceSwitchCommands } from "./commands.js";
 export { scoreCommand } from "./scorer.js";

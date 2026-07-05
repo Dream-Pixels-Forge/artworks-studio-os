@@ -11,6 +11,7 @@ export {
   setActivePanel,
   findPanelNode,
   findSlotNode,
+  wrapWithNewTab,
 } from "./workspace-state.js";
 export {
   layoutReducer,

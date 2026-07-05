@@ -69,7 +69,18 @@ export interface ResizeAction {
   sizes: number[];
 }
 
-export type LayoutAction = SetActiveAction | CloseTabAction | MovePanelAction | ResizeAction;
+/**
+ * Collapse or restore a region. The first tab group tagged with `slot` flips
+ * its `hidden` flag; toggling again restores it. A no-op if no such group
+ * exists (e.g. the slot was never added to the layout).
+ */
+export interface ToggleRegionAction {
+  type: "TOGGLE_REGION";
+  /** Canonical slot to find and toggle. */
+  slot: WorkspaceSlot;
+}
+
+export type LayoutAction = SetActiveAction | CloseTabAction | MovePanelAction | ResizeAction | ToggleRegionAction;
 
 // ---------------------------------------------------------------------------
 // Small structural helpers
@@ -226,6 +237,20 @@ export function layoutReducer(root: LayoutNode, action: LayoutAction): LayoutNod
     case "MOVE_PANEL":
       return movePanel(clone(root), action);
 
+    case "TOGGLE_REGION": {
+      // Flip the `hidden` flag on the first tab group tagged with `slot`.
+      // Done as a single pass: the first match toggles, the rest are left
+      // alone so a multi-group slot keeps its other groups visible.
+      let toggled = false;
+      const out = walk(clone(root), (node) => {
+        if (!toggled && isTabNode(node) && node.slot === action.slot) {
+          node.hidden = !node.hidden;
+          toggled = true;
+        }
+      });
+      return toggled ? out : root;
+    }
+
     default:
       return root;
   }
@@ -234,7 +259,7 @@ export function layoutReducer(root: LayoutNode, action: LayoutAction): LayoutNod
 /** Handle a MOVE_PANEL: first remove the panel from anywhere, then insert. */
 function movePanel(root: LayoutNode, action: MovePanelAction): LayoutNode {
   // 1) Remove the panel from its current location across the whole tree.
-  let tree = walk(root, (node) => {
+  const tree = walk(root, (node) => {
     if (isTabNode(node) && node.panels.includes(action.panelId)) {
       const idx = node.panels.indexOf(action.panelId);
       node.panels.splice(idx, 1);
@@ -244,56 +269,60 @@ function movePanel(root: LayoutNode, action: MovePanelAction): LayoutNode {
     }
   });
 
-  // 2) Prune empties/collapses so the target lookup is clean.
-  const pruned = pruneAndCollapse(tree);
-  if (!pruned) {
-    // Whole tree emptied — the panel becomes the only node.
-    return makeTabNode("center", action.panelId);
-  }
-  tree = pruned;
-
-  // 3) Locate the target and dock.
+  // 2) Locate the target BEFORE pruning. The target may be the group we just
+  //    emptied — e.g. the user dragged a group's only tab onto one of that
+  //    group's own edges — and pruning first would erase both the target and
+  //    a place to put the panel back, silently dropping it.
   const target = findNode(tree, action.targetNodeId);
-  if (!target) return tree;
+  if (target) {
+    // 3a) Graft the panel onto/next-to the target, then prune any empties the
+    //     removal or graft left behind (e.g. an emptied source group).
+    const grafted = dockIntoTarget(tree, target, action);
+    return pruneAndCollapse(grafted) ?? grafted;
+  }
 
-  // Remove the target from its parent so we can graft cleanly.
-  const { grafted, dockedNode } = dockIntoTarget(tree, target, action);
-  void dockedNode;
-  return grafted;
+  // 3b) Stale target id (no longer in the tree after removal). Don't lose the
+  //     panel — dock it into the first remaining tab group, or make it the
+  //     root if the tree emptied out entirely.
+  const pruned = pruneAndCollapse(tree);
+  if (!pruned) return makeTabNode("center", action.panelId);
+  const firstTab = firstTabDescendant(pruned);
+  if (!firstTab) return makeTabNode("center", action.panelId);
+  return walk(pruned, (node) => {
+    if (node.id === firstTab.id && isTabNode(node)) {
+      node.panels.push(action.panelId);
+      node.activeIndex = node.panels.length - 1;
+    }
+  });
 }
 
 /**
  * Graft the dragged panel onto/next-to the target node, returning the new
  * root. `center` stacks into a tab group; edges create a new split.
  */
-function dockIntoTarget(root: LayoutNode, target: LayoutNode, action: MovePanelAction): {
-  grafted: LayoutNode;
-  dockedNode: LayoutNode;
-} {
+function dockIntoTarget(root: LayoutNode, target: LayoutNode, action: MovePanelAction): LayoutNode {
   const incoming = makeTabNode(detectSlot(target), action.panelId);
 
   // Center drop: stack into (or onto) the target tab group.
   if (action.edge === "center") {
     if (isTabNode(target)) {
       // Add to the existing group and activate.
-      const merged: LayoutNode = walk(root, (node) => {
+      return walk(root, (node) => {
         if (node.id === target.id && isTabNode(node)) {
           node.panels.push(action.panelId);
           node.activeIndex = node.panels.length - 1;
         }
       });
-      return { grafted: merged, dockedNode: target };
     }
     // Target is a split — dock into its first tab-group descendant.
     const firstTab = firstTabDescendant(target);
     if (firstTab) {
-      const merged: LayoutNode = walk(root, (node) => {
+      return walk(root, (node) => {
         if (node.id === firstTab.id && isTabNode(node)) {
           node.panels.push(action.panelId);
           node.activeIndex = node.panels.length - 1;
         }
       });
-      return { grafted: merged, dockedNode: firstTab };
     }
   }
 
@@ -305,8 +334,7 @@ function dockIntoTarget(root: LayoutNode, target: LayoutNode, action: MovePanelA
     sizes: [0.5, 0.5],
     children: edgeIsBefore(action.edge) ? [incoming, target] : [target, incoming],
   };
-  const replaced = replaceNode(root, target.id, split);
-  return { grafted: replaced, dockedNode: split };
+  return replaceNode(root, target.id, split);
 }
 
 /** Best-effort slot tag for a newly created node based on its tree position. */
