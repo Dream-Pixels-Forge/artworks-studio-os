@@ -62,11 +62,15 @@ export const WINDOW_CHANNELS = {
   toggleMaximize: "window:maximize-toggle",
   close: "window:close",
   isMaximized: "window:is-maximized",
+  /** Renderer asks main to pop a panel out into its own window. */
+  detachPanel: "window:detach-panel",
 } as const;
 
 /** Main → renderer push channels (sent to the window's webContents). */
 export const WINDOW_EVENTS = {
   maximizedChanged: "window:maximized-changed",
+  /** A detached panel's window closed — main window should re-dock it. */
+  detachedClosed: "window:detached-closed",
 } as const;
 
 /** Renderer → main: a menu item with a studio action was triggered. */

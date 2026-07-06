@@ -107,6 +107,29 @@ export function WorkspaceLayout() {
     /* see above */
   }, []);
 
+  // Detach a panel into its own BrowserWindow. Asks main to open the window,
+  // then removes the panel from this layout — closing the detached window
+  // triggers the re-dock listener below, which re-opens it here.
+  const handleDetach = useCallback((panelId: string) => {
+    const def = panelRegistry.get(panelId);
+    if (!def) return;
+    void window.artworks.window.detachPanel(panelId, def.title);
+    setRoot((prev) => {
+      const existing = findPanelNode(prev, panelId);
+      if (!existing) return prev;
+      return layoutReducer(prev, { type: "CLOSE_TAB", nodeId: existing.id, panelId });
+    });
+  }, []);
+
+  // Re-dock: when a detached panel's window closes, main sends an event with
+  // the panel id; reopen it into the main layout at its default slot.
+  useEffect(() => {
+    const unsubscribe = window.artworks.window.onDetachedPanelClosed((panelId) => {
+      openPanel(panelId);
+    });
+    return unsubscribe;
+  }, [openPanel]);
+
   // --- Workspace switching -------------------------------------------------
   const handleSelectWorkspace = useCallback((id: string) => {
     const ws = listWorkspaces().find((w) => w.id === id);
@@ -152,6 +175,7 @@ export function WorkspaceLayout() {
           onAction={dispatch}
           onDragStartPanel={handleDragStartPanel}
           onDragEndPanel={handleDragEndPanel}
+          onDetach={handleDetach}
         />
       </div>
     </div>

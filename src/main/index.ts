@@ -131,7 +131,7 @@ app.whenReady().then(async () => {
   shortcutsService.setOnAction((action) => windowManager.forwardMenuAction(action));
 
   // Window controls (title bar) + the main window with persisted state.
-  registerWindowIpc();
+  registerWindowIpc(windowManager);
   await windowManager.start({ indexHtmlPath: getIndexHtml() });
 
   app.on("activate", () => {

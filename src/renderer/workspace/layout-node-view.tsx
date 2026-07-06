@@ -18,6 +18,7 @@ export interface LayoutNodeViewProps {
   onAction: (action: LayoutAction) => void;
   onDragStartPanel: (panelId: string) => void;
   onDragEndPanel: () => void;
+  onDetach: (panelId: string) => void;
 }
 
 export function LayoutNodeView(props: LayoutNodeViewProps): ReactNode {
@@ -42,6 +43,7 @@ export function LayoutNodeView(props: LayoutNodeViewProps): ReactNode {
       onAction={props.onAction}
       onDragStartPanel={props.onDragStartPanel}
       onDragEndPanel={props.onDragEndPanel}
+      onDetach={props.onDetach}
     />
   );
 }
