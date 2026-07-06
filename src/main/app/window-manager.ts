@@ -34,6 +34,11 @@ const SAVE_DEBOUNCE_MS = 400;
 interface TrackedWindow {
   window: BrowserWindow;
   role: WindowRole;
+  /**
+   * For secondary windows only: the panel id this window was detached to show.
+   * Broadcast to the main window on close so it can re-dock the panel.
+   */
+  panelId?: string;
   /** Pending save timer for this window's debounced state write. */
   saveTimer: Timer | undefined;
 }
@@ -72,17 +77,18 @@ export class WindowManager {
   }
 
   /**
-   * Open a secondary window (e.g. an asset detached into its own window in a
-   * later phase). Groundwork now; the renderer doesn't call it yet.
+   * Open a secondary window showing a single detached panel. The panel id is
+   * passed to the renderer as a `?panel=<id>` query param (see main.tsx) and
+   * remembered on the tracked window so close can broadcast a re-dock event.
+   * Secondary windows inherit the main window's current size as a default.
    */
-  createSecondary(opts: { title: string }): BrowserWindow {
+  createSecondary(opts: { title: string; panelId: string }): BrowserWindow {
     // Secondary windows inherit the main window's current size as a default.
     const main = this.findByRole("main");
-    const state = main ? (() => {
-      const b = main.getBounds();
-      return { width: b.width, height: b.height };
-    })() : undefined;
-    return this.open({ role: "secondary", title: opts.title, state });
+    const state = main
+      ? { width: main.getBounds().width, height: main.getBounds().height }
+      : undefined;
+    return this.open({ role: "secondary", title: opts.title, state, panelId: opts.panelId });
   }
 
   /** Persist any pending window state. Call on before-quit. */
@@ -122,15 +128,19 @@ export class WindowManager {
     role: WindowRole;
     title: string;
     state?: import("@shared/window/index.js").WindowState;
+    panelId?: string;
   }): BrowserWindow {
     const window = createWindow({
       indexHtmlPath: this.indexHtmlPath!,
       state: opts.state,
       title: opts.title,
+      // Only detached-panel windows carry a panel id; the main window loads
+      // the bare index so it mounts <StudioShell> as before.
+      query: opts.panelId ? { panel: opts.panelId } : undefined,
     });
 
-    this.track(window, opts.role);
-    log.info("window opened", { id: window.id, role: opts.role });
+    this.track(window, opts.role, opts.panelId);
+    log.info("window opened", { id: window.id, role: opts.role, panelId: opts.panelId });
     return window;
   }
 
@@ -141,8 +151,8 @@ export class WindowManager {
     return clampToVisible(persisted, this.displays());
   }
 
-  private track(window: BrowserWindow, role: WindowRole): void {
-    const tracked: TrackedWindow = { window, role, saveTimer: undefined };
+  private track(window: BrowserWindow, role: WindowRole, panelId?: string): void {
+    const tracked: TrackedWindow = { window, role, panelId, saveTimer: undefined };
     this.windows.set(window.id, tracked);
 
     // Persist geometry after the user finishes resizing/moving (debounced).
@@ -158,10 +168,20 @@ export class WindowManager {
       if (tracked.saveTimer) clearTimeout(tracked.saveTimer);
       this.windows.delete(window.id);
       this.applyMenu(); // rebuild Window menu without the closed entry
+      // A detached panel's window closed — tell the main window to re-dock it
+      // so the panel reappears at its default slot (lossless from the user view).
+      if (tracked.panelId) this.broadcastDetachedClosed(tracked.panelId);
       log.info("window closed", { id: window.id });
     });
 
     this.applyMenu(); // include the new window in the Window menu
+  }
+
+  /** Tell the main window a detached panel's window closed, so it re-docks. */
+  private broadcastDetachedClosed(panelId: string): void {
+    const main = this.findByRole("main");
+    if (!main || main.isDestroyed()) return;
+    main.webContents.send(WINDOW_EVENTS.detachedClosed, panelId);
   }
 
   private scheduleSave(tracked: TrackedWindow): void {

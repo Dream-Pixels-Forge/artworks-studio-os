@@ -244,6 +244,103 @@
   background: var(--color-surface-muted);
 }
 
+/* Detach (pop into own window) button — mirrors the close button's reveal. */
+.tab-group__detach {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  margin-right: 2px;
+  cursor: pointer;
+  border-radius: var(--radius-sm, 3px);
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+
+.tab-group__tab:hover .tab-group__detach,
+.tab-group__tab--active .tab-group__detach {
+  opacity: 1;
+}
+
+.tab-group__detach:hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+/* ---- Detached single-panel window ---- */
+/* Minimal chrome around one panel rendered in its own BrowserWindow. */
+.single-panel-window {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--color-surface, #1a1a1a);
+  color: var(--color-text, #e6e6e6);
+}
+
+.single-panel-window__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 8px 0 12px;
+  background: var(--color-surface-raised, #1e1e1e);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+  -webkit-app-region: drag; /* let the slim title strip drag the frameless window */
+  user-select: none;
+}
+
+.single-panel-window__icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.single-panel-window__title {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.single-panel-window__close {
+  -webkit-app-region: no-drag;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 3px);
+}
+
+.single-panel-window__close:hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.single-panel-window__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.single-panel-window--empty .single-panel-window__body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
 .tab-group__content {
   flex: 1 1 auto;
   min-height: 0;

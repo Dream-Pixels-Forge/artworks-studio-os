@@ -76,6 +76,22 @@ const artworksApi = {
       ipcRenderer.on("window:maximized-changed", listener);
       return () => ipcRenderer.off("window:maximized-changed", listener);
     },
+    /**
+     * Pop a panel out into its own window. Resolves once main has opened the
+     * secondary BrowserWindow. Channel mirrors WINDOW_CHANNELS.detachPanel.
+     */
+    detachPanel: (panelId: string, title: string): Promise<{ windowId: number }> =>
+      ipcRenderer.invoke("window:detach-panel", { panelId, title }),
+    /**
+     * Subscribe to "a detached panel's window closed" events so the main
+     * window can re-dock the panel. Returns an unsubscribe. Mirrors
+     * WINDOW_EVENTS.detachedClosed.
+     */
+    onDetachedPanelClosed: (cb: (panelId: string) => void): (() => void) => {
+      const listener = (_event: unknown, panelId: string): void => cb(panelId);
+      ipcRenderer.on("window:detached-closed", listener);
+      return () => ipcRenderer.off("window:detached-closed", listener);
+    },
   },
 
   /** System dialogs — file open, etc. */

@@ -45,6 +45,10 @@ interface ArtworksApi {
     close: () => void;
     isMaximized: () => Promise<boolean>;
     onMaximizedChanged: (cb: (isMaximized: boolean) => void) => () => void;
+    /** Pop a panel out into its own BrowserWindow. */
+    detachPanel: (panelId: string, title: string) => Promise<{ windowId: number }>;
+    /** Subscribe to "a detached panel's window closed" events (for re-docking). */
+    onDetachedPanelClosed: (cb: (panelId: string) => void) => () => void;
   };
 
   dialog: {

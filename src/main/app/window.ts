@@ -19,6 +19,12 @@ export interface CreateWindowOptions {
   title?: string;
   /** Background color while the renderer loads. */
   backgroundColor?: string;
+  /**
+   * Query-string params appended to the loaded renderer URL. Used to tell a
+   * secondary window which view to mount (e.g. `{ panel: "asset-browser" }`).
+   * Omitted for the main window.
+   */
+  query?: Record<string, string>;
 }
 
 const STUDIO_MIN_WIDTH = 1024;
@@ -28,7 +34,7 @@ const DEFAULT_WIDTH = 1440;
 const DEFAULT_HEIGHT = 900;
 
 export function createWindow(options: CreateWindowOptions): BrowserWindow {
-  const { state, indexHtmlPath } = options;
+  const { state, indexHtmlPath, query } = options;
   const width = state?.width ?? DEFAULT_WIDTH;
   const height = state?.height ?? DEFAULT_HEIGHT;
 
@@ -64,16 +70,31 @@ export function createWindow(options: CreateWindowOptions): BrowserWindow {
     window.maximize();
   }
 
-  loadRenderer(window, indexHtmlPath);
+  loadRenderer(window, indexHtmlPath, query);
   return window;
 }
 
-function loadRenderer(window: BrowserWindow, path: string): void {
+/**
+ * Load the renderer into a window. In dev the path is the vite dev-server URL;
+ * in production it's the built index.html on disk. An optional `query` is
+ * forwarded in both modes so a secondary window can be told which view to show
+ * (e.g. `?panel=<id>`). The two Electron APIs accept the query differently —
+ * loadFile takes a `query` option, loadURL needs it appended to the URL.
+ */
+function loadRenderer(window: BrowserWindow, path: string, query?: Record<string, string>): void {
   if (path.startsWith("http")) {
-    void window.loadURL(path);
+    const url = query ? appendQuery(path, query) : path;
+    void window.loadURL(url);
   } else {
-    void window.loadFile(path);
+    void window.loadFile(path, query ? { query } : undefined);
   }
+}
+
+/** Append a query string to a base URL (dev-server case). */
+function appendQuery(baseUrl: string, query: Record<string, string>): string {
+  const qs = new URLSearchParams(query).toString();
+  if (!qs) return baseUrl;
+  return baseUrl.includes("?") ? `${baseUrl}&${qs}` : `${baseUrl}?${qs}`;
 }
 
 /**

@@ -20,9 +20,11 @@ export interface TabGroupProps {
   onDragStartPanel: (panelId: string) => void;
   /** Clear the in-flight drag state. */
   onDragEndPanel: () => void;
+  /** Pop a panel out into its own window (the ⤢ button on each tab). */
+  onDetach: (panelId: string) => void;
 }
 
-export function TabGroup({ node, panelDef, onAction, onDragStartPanel, onDragEndPanel }: TabGroupProps) {
+export function TabGroup({ node, panelDef, onAction, onDragStartPanel, onDragEndPanel, onDetach }: TabGroupProps) {
   const [dragOverEdge, setDragOverEdge] = useState<DockEdge | null>(null);
 
   // A toggled-hidden region renders only a slim placeholder bar; clicking it
@@ -69,6 +71,13 @@ export function TabGroup({ node, panelDef, onAction, onDragStartPanel, onDragEnd
     onAction({ type: "CLOSE_TAB", nodeId: node.id, panelId });
   };
 
+  const detachTab = (e: MouseEvent, panelId: string) => {
+    // stopPropagation so the tab's own onClick (SET_ACTIVE) doesn't fire — the
+    // panel is about to leave this group anyway.
+    e.stopPropagation();
+    onDetach(panelId);
+  };
+
   const Panel = activeDef?.component;
 
   return (
@@ -99,6 +108,14 @@ export function TabGroup({ node, panelDef, onAction, onDragStartPanel, onDragEnd
             >
               {def?.icon ? <span className="tab-group__icon" aria-hidden>{def.icon}</span> : null}
               <span className="tab-group__label">{def?.title ?? panelId}</span>
+              <button
+                className="tab-group__detach"
+                aria-label={`Detach ${def?.title ?? panelId} into window`}
+                title="Detach into window"
+                onClick={(e) => detachTab(e, panelId)}
+              >
+                ⤢
+              </button>
               <button
                 className="tab-group__close"
                 aria-label={`Close ${def?.title ?? panelId}`}
