@@ -25,6 +25,8 @@ export function AIChatPanel() {
   const [streamText, setStreamText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const unsubStreamRef = useRef<(() => void) | null>(null);
+  /** Cancels the in-flight AI stream on the main process (stops the fetch). */
+  const cancelStreamRef = useRef<(() => Promise<boolean>) | null>(null);
   const defaultModelSet = useRef(false);
 
   const load = useCallback(async () => {
@@ -45,8 +47,12 @@ export function AIChatPanel() {
   }, []);
 
   useEffect(() => { load(); loadModels(); }, [load, loadModels]);
-  // Cleanup streaming subscription on unmount
-  useEffect(() => () => { unsubStreamRef.current?.(); }, []);
+  // Cleanup streaming subscription on unmount — also cancel the main-side
+  // fetch so it doesn't keep consuming tokens after the panel is gone.
+  useEffect(() => () => {
+    cancelStreamRef.current?.();
+    unsubStreamRef.current?.();
+  }, []);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [active?.messages, streamText]);
 
   async function create() {
@@ -88,6 +94,14 @@ export function AIChatPanel() {
       }));
 
       if (streaming) {
+        // Cancel any still-running stream before starting a new one — otherwise
+        // switching conversations mid-stream leaves the old fetch running on the
+        // main process (token burn + the orphaned chunks arrive with a stale id
+        // and are silently dropped).
+        cancelStreamRef.current?.();
+        unsubStreamRef.current?.();
+        cancelStreamRef.current = null;
+        unsubStreamRef.current = null;
         streamingActive = true;
         // Streaming mode: receive chunks in real-time
         // Note: setLoading(false) is handled by the "done" chunk handler below,
@@ -99,6 +113,7 @@ export function AIChatPanel() {
           maxTokens: 2048,
         });
         // Store unsubscribe so it can be cleaned up on unmount / conversation switch
+        cancelStreamRef.current = () => sub.cancel();
         unsubStreamRef.current = sub.subscribe((chunk) => {
           if (chunk.type === "text" && chunk.text) {
             setStreamText((prev) => prev + chunk.text);
@@ -118,11 +133,13 @@ export function AIChatPanel() {
             // Clean up streaming subscription
             unsubStreamRef.current?.();
             unsubStreamRef.current = null;
+            cancelStreamRef.current = null;
           } else if (chunk.type === "error") {
             setError(chunk.error ?? "Stream failed");
             setLoading(false);
             unsubStreamRef.current?.();
             unsubStreamRef.current = null;
+            cancelStreamRef.current = null;
           }
         });
         // Subscription will be cleaned up on unmount or conversation switch via unsubStreamRef

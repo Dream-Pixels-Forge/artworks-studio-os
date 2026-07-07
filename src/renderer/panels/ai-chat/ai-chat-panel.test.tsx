@@ -24,6 +24,7 @@ const mockStream = vi.fn(() => ({
     subscribeCallback = cb;
     return vi.fn(); // unsubscribe
   }),
+  cancel: vi.fn(() => Promise.resolve(true)),
 }));
 
 const mockComplete = vi.fn();

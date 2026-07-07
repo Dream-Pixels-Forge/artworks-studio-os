@@ -223,10 +223,14 @@ export async function* stream(
   messages: AIMessage[],
   options: AICompletionOptions = {},
   getKey: ApiKeyResolver,
+  signal?: AbortSignal,
 ): AsyncGenerator<AIStreamChunk> {
   const modelId = options.model ?? "gpt-4o-mini";
   const model = getModel(modelId);
   if (!model) throw new Error(`Unknown model: ${modelId}`);
+
+  // Bail out early if already aborted before any network work starts.
+  if (signal?.aborted) return;
 
   const provider = options.provider ?? model.provider;
   const apiKey = getKey(provider);
@@ -246,11 +250,19 @@ export async function* stream(
     ? `${endpoint}/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`
     : endpoint;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (err) {
+    // AbortError is a clean cancellation, not a failure — just stop.
+    if (signal?.aborted || (err instanceof Error && err.name === "AbortError")) return;
+    throw err;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -267,26 +279,41 @@ export async function* stream(
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
 
-    for (const line of lines) {
-      const chunk = parseStreamLine(provider, line);
+      for (const line of lines) {
+        const chunk = parseStreamLine(provider, line);
+        if (chunk) yield chunk;
+      }
+
+      // Check abort between reads so cancellation is prompt, not just at the
+      // next fetch rejection. The provider keeps streaming tokens otherwise.
+      if (signal?.aborted) {
+        await reader.cancel().catch(() => {});
+        return;
+      }
+    }
+
+    if (buffer.trim()) {
+      const chunk = parseStreamLine(provider, buffer);
       if (chunk) yield chunk;
     }
-  }
 
-  if (buffer.trim()) {
-    const chunk = parseStreamLine(provider, buffer);
-    if (chunk) yield chunk;
+    yield { type: "done" };
+  } catch (err) {
+    // A mid-stream abort rejects reader.read(); treat as clean stop.
+    if (signal?.aborted || (err instanceof Error && err.name === "AbortError")) return;
+    // Release the reader on any other error before re-throwing.
+    await reader.cancel().catch(() => {});
+    throw err;
   }
-
-  yield { type: "done" };
 }
 
 export { listModels, getModel, type AIModelEntry };
