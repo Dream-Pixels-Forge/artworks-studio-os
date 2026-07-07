@@ -183,7 +183,12 @@ export class MarketplaceRepository {
     }
     if (filter.search) {
       conditions.push("uuid IN (SELECT uuid FROM marketplace_fts WHERE marketplace_fts MATCH ?)");
-      params.push(filter.search);
+      // Wrap as an FTS5 quoted phrase so user input (quotes, dashes, stars) is
+      // treated as a literal string, not operators. Matches the convention in
+      // entity-repository.search. Without this, a bare " or leading - raises
+      // "fts5: syntax error" and rejects through to the renderer.
+      const safe = `"${filter.search.replace(/"/g, '""')}"`;
+      params.push(safe);
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";

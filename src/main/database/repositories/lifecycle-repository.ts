@@ -179,7 +179,7 @@ export class LifecycleRepository {
       )?.c ?? 0;
 
     const avgRow = this.db.get<{ a: number }>(
-      "SELECT AVG(juliayday(updated_at) - juliayday(entered_at)) * 24 AS a FROM production_lifecycle"
+      "SELECT AVG(julianday(updated_at) - julianday(entered_at)) * 24 AS a FROM production_lifecycle"
     );
     const avgTimeInStateHours = Math.round((avgRow?.a ?? 0) * 10) / 10;
 
@@ -188,14 +188,19 @@ export class LifecycleRepository {
 
   /** Delete lifecycle entry for an entity. */
   delete(entityUuid: string): boolean {
-    this.db.exec(
-      "DELETE FROM lifecycle_transitions WHERE entity_uuid = ?",
-      [entityUuid]
-    );
-    this.db.exec(
-      "DELETE FROM production_lifecycle WHERE entity_uuid = ?",
-      [entityUuid]
-    );
-    return true;
+    // Atomic: a failure between the two DELETEs would orphan the lifecycle
+    // row (transitions gone, current-state row remains). db.ts requires
+    // multi-table writes to go through transaction().
+    return this.db.transaction(() => {
+      this.db.exec(
+        "DELETE FROM lifecycle_transitions WHERE entity_uuid = ?",
+        [entityUuid],
+      );
+      this.db.exec(
+        "DELETE FROM production_lifecycle WHERE entity_uuid = ?",
+        [entityUuid],
+      );
+      return true;
+    });
   }
 }

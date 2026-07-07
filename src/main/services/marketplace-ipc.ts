@@ -44,10 +44,15 @@ export function registerMarketplaceIpc(db: StudioDatabase): void {
     return repo.publish(input);
   });
 
-  ipcMain.handle("marketplace:install", (_e, uuid: string, version: string) => {
+  ipcMain.handle("marketplace:install", async (_e, uuid: string, version: string) => {
     log.debug("install", { uuid, version });
-    repo.markInstalled(uuid, version);
-    repo.recordDownload(uuid);
+    // Atomic: a failure between markInstalled and recordDownload would leave a
+    // listing marked installed with no download counted. The db.ts convention
+    // requires multi-table writes to go through transaction().
+    await db.transaction(() => {
+      repo.markInstalled(uuid, version);
+      repo.recordDownload(uuid);
+    });
     return { success: true };
   });
 
