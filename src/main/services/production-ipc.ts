@@ -518,6 +518,9 @@ export function registerProductionIpc(db: StudioDatabase, apiKeyService: ApiKeyS
   // --- AI Gateway (Phase 19) ---
   // Keys are resolved through ApiKeyService (single source of truth) so that
   // keys saved via Settings → API Keys are visible to the gateway.
+  // Active streams keyed by renderer-supplied streamId; ai:cancel aborts them
+  // so closing the AI panel mid-stream stops the fetch instead of leaking it.
+  const activeStreams = new Map<string, AbortController>();
   ipcMain.handle("ai:listModels", () => listModels());
   ipcMain.handle("ai:complete", async (_e, messages: AIMessage[], options?: AICompletionOptions) => {
     try {
@@ -528,18 +531,40 @@ export function registerProductionIpc(db: StudioDatabase, apiKeyService: ApiKeyS
     }
   });
   ipcMain.handle("ai:stream", async (e, streamId: string, messages: AIMessage[], options?: AICompletionOptions) => {
+    // Track the active stream so ai:cancel can abort it. Without this, closing
+    // the AI panel mid-stream left the upstream fetch running to completion —
+    // burning tokens, and e.sender.send to a destroyed webContents throws.
+    const controller = new AbortController();
+    activeStreams.set(streamId, controller);
     try {
-      const gen = stream(messages, options, (p) => apiKeyService.getKey(p));
+      const gen = stream(messages, options, (p) => apiKeyService.getKey(p), controller.signal);
       for await (const chunk of gen) {
+        // Guard: the renderer may have closed (panel unmount, window close).
+        // Sending to a destroyed webContents throws and aborts the loop.
+        if (e.sender.isDestroyed()) {
+          controller.abort();
+          break;
+        }
         e.sender.send("ai:stream:chunk", streamId, chunk);
       }
       return { ok: true };
     } catch (err) {
       log.error("AI stream failed", err);
       const errorChunk: AIStreamChunk = { type: "error", error: err instanceof Error ? err.message : String(err) };
-      e.sender.send("ai:stream:chunk", streamId, errorChunk);
+      if (!e.sender.isDestroyed()) e.sender.send("ai:stream:chunk", streamId, errorChunk);
       return { ok: false, error: errorChunk.error };
+    } finally {
+      activeStreams.delete(streamId);
     }
+  });
+
+  // Cancel an in-flight stream by id. The gateway's abort signal stops the
+  // fetch and breaks the read loop; the stream handler returns { ok: true }.
+  ipcMain.handle("ai:cancel", (_e, streamId: string): boolean => {
+    const controller = activeStreams.get(streamId);
+    if (!controller) return false;
+    controller.abort();
+    return true;
   });
 
   // --- Production Export (Phase 19) ---

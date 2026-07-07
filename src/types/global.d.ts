@@ -351,6 +351,8 @@ interface ArtworksApi {
       options?: { model?: string; provider?: string; temperature?: number; maxTokens?: number },
     ) => {
       subscribe: (onChunk: (chunk: { type: string; text?: string; usage?: { promptTokens: number; completionTokens: number; totalTokens: number }; error?: string }) => void) => () => void;
+      /** Abort the in-flight stream on the main process (stops the fetch + token burn). */
+      cancel: () => Promise<boolean>;
     };
   };
 

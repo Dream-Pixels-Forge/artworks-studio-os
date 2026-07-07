@@ -543,7 +543,63 @@ describe("stream()", () => {
     expect(url).toContain("alt=sse");
     expect(url).toContain("key=AIzaSy-test-google");
   });
+
+  // --- Cancellation (AbortSignal) ---
+  it("returns no chunks when aborted before any network work", async () => {
+    // Even though fetch is mocked to return a body, an already-aborted signal
+    // short-circuits at the top of stream() before fetch is called.
+    mockFetch.mockResolvedValueOnce(
+      new Response(sseBody(['data: {"choices":[{"delta":{"content":"x"}}]}']), {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      }),
+    );
+
+    const { stream } = await import("./ai-gateway.js");
+    const controller = new AbortController();
+    controller.abort();
+
+    const chunks: unknown[] = [];
+    for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver, controller.signal)) {
+      chunks.push(chunk);
+    }
+    expect(chunks).toEqual([]);
+    // And fetch was never called (short-circuit happened first).
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("aborts cleanly when the signal fires mid-stream (no error chunk)", async () => {
+    // Build a body that yields one chunk, then waits for the abort before
+    // pulling again. The reader.read() rejection from cancel() must be
+    // swallowed as a clean stop, not surfaced as an error.
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"first"}}]}\n'));
+      },
+    });
+    mockFetch.mockResolvedValueOnce(
+      new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } }),
+    );
+
+    const { stream } = await import("./ai-gateway.js");
+    const controller = new AbortController();
+    const chunks: Array<{ type: string; text?: string }> = [];
+    const consumer = (async () => {
+      for await (const chunk of stream([userMsg], { model: "gpt-4o-mini" }, fakeKeyResolver, controller.signal)) {
+        chunks.push(chunk);
+        // Abort immediately after the first chunk lands — before the next read.
+        controller.abort();
+      }
+    })();
+
+    // Must resolve without throwing (AbortError is treated as a clean stop).
+    await expect(consumer).resolves.toBeUndefined();
+    // The first chunk was yielded; no error or trailing done on abort.
+    expect(chunks).toEqual([{ type: "text", text: "first" }]);
+  });
 });
+
 
 // ---------------------------------------------------------------------------
 // Tests — re-exports
