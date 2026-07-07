@@ -170,13 +170,22 @@ export class RoleRepository {
   // ── User ↔ Role assignments ────────────────────────────────
 
   assignRoleToUser(userUuid: string, roleUuid: string, grantedBy?: string): UserRole {
+    // Idempotent: assigning the same role twice (e.g. an "ensure this user has
+    // this role" path) would otherwise throw SQLITE_CONSTRAINT_UNIQUE. Uses
+    // INSERT OR IGNORE + re-fetches the existing row, matching the pattern in
+    // assignPermissionToRole above.
     const uuid = crypto.randomUUID();
     this.db.exec(
-      `INSERT INTO user_roles (uuid, user_uuid, role_uuid, granted_by)
+      `INSERT OR IGNORE INTO user_roles (uuid, user_uuid, role_uuid, granted_by)
        VALUES (?, ?, ?, ?)`,
       [uuid, userUuid, roleUuid, grantedBy ?? null],
     );
-    return this.db.get<UserRole>("SELECT * FROM user_roles WHERE uuid = ?", [uuid])!;
+    return (
+      this.db.get<UserRole>(
+        "SELECT * FROM user_roles WHERE user_uuid = ? AND role_uuid = ?",
+        [userUuid, roleUuid],
+      ) ?? this.db.get<UserRole>("SELECT * FROM user_roles WHERE uuid = ?", [uuid])!
+    );
   }
 
   revokeRoleFromUser(userUuid: string, roleUuid: string): boolean {

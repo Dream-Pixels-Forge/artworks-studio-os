@@ -243,7 +243,7 @@ export async function* stream(
   });
 
   const url = provider === "google"
-    ? `${endpoint}/${modelId}:generateContent?alt=sse&key=${apiKey}`
+    ? `${endpoint}/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`
     : endpoint;
 
   const response = await fetch(url, {

@@ -247,7 +247,7 @@ export class ProductionIntelligenceRepository {
     ).map((r) => ({ userUuid: r.user_uuid, actions: r.actions }));
 
     const avgApprovalRow = this.db.get<{ a: number }>(
-      `SELECT AVG(juliayday(updated_at) - juliayday(created_at)) * 24 AS a
+      `SELECT AVG(julianday(updated_at) - julianday(created_at)) * 24 AS a
        FROM approvals WHERE status IN ('approved', 'rejected')`
     );
     const avgApprovalTimeHours = Math.round((avgApprovalRow?.a ?? 0) * 10) / 10;

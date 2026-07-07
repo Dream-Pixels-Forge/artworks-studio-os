@@ -253,6 +253,22 @@ describe("MarketplaceRepository — search via FTS", () => {
     const results = repo.search("(test)");
     expect(Array.isArray(results)).toBe(true);
   });
+
+  // Regression: a bare double-quote, leading dash, or star used to raise
+  // "fts5: syntax error" because raw input was passed straight to MATCH. The
+  // repo now wraps the query as a quoted FTS5 phrase, so these return []
+  // instead of throwing.
+  it.each([
+    "bare \" quote",
+    "-leading-dash",
+    "*star",
+    "a OR b",
+    "colons:and::such",
+  ])("does not throw on adversarial FTS input: %s", (query) => {
+    publishSampleSet();
+    expect(() => repo.search(query)).not.toThrow();
+    expect(Array.isArray(repo.search(query))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
