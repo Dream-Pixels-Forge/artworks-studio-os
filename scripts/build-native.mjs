@@ -25,6 +25,19 @@
  * Node first (then copy aside), Electron last (so the canonical
  * `build/Release/` ends up holding the Electron ABI).
  *
+ * ## Auto-run
+ *
+ * This runs automatically as the `postinstall` hook, so a fresh
+ * `pnpm install` leaves both binaries ready. Two guards keep that safe:
+ *
+ *   - In CI (`CI=true`) the Electron rebuild is SKIPPED — CI only runs the
+ *     test suite, which needs the Node ABI, so the ~1-2min Electron
+ *     compile would just waste time and add a failure surface there.
+ *   - When invoked via postinstall, failures are non-fatal (warn + exit 0)
+ *     so a native-compile hiccup never blocks `pnpm install`. Re-run
+ *     `pnpm rebuild:native` explicitly to see the real error — that path
+ *     stays strict.
+ *
  * Usage:  pnpm rebuild:native   (or: node scripts/build-native.mjs)
  */
 import { createRequire } from "node:module";
@@ -36,6 +49,11 @@ import { spawnSync } from "node:child_process";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const require = createRequire(import.meta.url);
+
+/** True when running as the `postinstall` hook (vs. an explicit invocation). */
+const viaPostinstall = process.env.npm_lifecycle_event === "postinstall";
+/** True in CI providers (GitHub Actions and others set `CI=true`). */
+const inCI = process.env.CI === "true" || process.env.CI === "1";
 
 /** Resolve the real (de-symlinked) better-sqlite3 package directory. */
 const bsqlPkgDir = dirname(require.resolve("better-sqlite3/package.json"));
@@ -121,8 +139,14 @@ async function main() {
   buildForNode();
   stageNodeBinary();
 
-  // 2) Electron binary (for the app). Rebuilds in place — MUST run last so
-  //    the canonical build/Release/ ends up holding the Electron ABI.
+  // 2) Electron binary (for the app). Skipped in CI — the test suite (the
+  //    only thing CI runs) needs the Node ABI, not Electron's, so this
+  //    ~1-2min compile would only waste time and add a failure surface there.
+  if (inCI) {
+    log("CI detected — skipping Electron rebuild (tests only need Node ABI).");
+    log("done. Node binary ready; run `pnpm rebuild:native` locally for the app.");
+    return;
+  }
   await buildForElectron();
 
   log("done. Both binaries ready:");
@@ -131,6 +155,16 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`[build-native] failed: ${err?.stack || err?.message || err}`);
+  const msg = err?.stack || err?.message || String(err);
+  if (viaPostinstall) {
+    // Never block `pnpm install` over a native-compile failure — the Node
+    // binary (needed for tests) is already staged by the time the Electron
+    // step runs, and the developer can re-run `pnpm rebuild:native` to get
+    // the strict, detailed error. Surface a visible warning instead.
+    console.warn(`[build-native] warning: native build incomplete (${err?.message || msg}).`);
+    console.warn("[build-native]          run `pnpm rebuild:native` for details.");
+    process.exit(0);
+  }
+  console.error(`[build-native] failed: ${msg}`);
   process.exit(1);
 });
