@@ -92,26 +92,40 @@ on GitHub.
 
 #### Native modules (better-sqlite3)
 
-`better-sqlite3` is a native module compiled to one binary that cannot
-satisfy two runtimes at once. The binding must match the ABI of whatever
-loads it:
+`better-sqlite3` is a native module compiled to one `.node` binary whose
+ABI must match the runtime that loads it. This app has two such runtimes:
 
-| Runtime | ABI | When |
+| Runtime | ABI | Binary used |
 | --- | --- | --- |
-| `pnpm test` (vitest on system Node) | Node | default |
-| `pnpm dev` / `pnpm build` (Electron) | Electron | before launching the app |
+| `pnpm test` (vitest on system Node) | Node | `build/Release-node/better_sqlite3.node` |
+| `pnpm dev` / `pnpm build` (Electron) | Electron | `build/Release/better_sqlite3.node` |
 
-The **default state is Node** — so `pnpm test` always works out of the box.
-Two scripts flip the binding as needed:
+Both binaries coexist on disk and the runtime selects its own automatically
+(`db.ts` points vitest at the Node-ABI side path via better-sqlite3's
+`nativeBinding` option; Electron loads its default), so **`pnpm test` and
+`pnpm dev` work interchangeably with no manual switching**.
+
+Build both binaries once after a fresh clone (or after an `electron` /
+`better-sqlite3` version bump):
 
 ```
-pnpm rebuild:node      # Node ABI (run before pnpm test if you've been in Electron)
-pnpm rebuild:electron  # Electron ABI (run before pnpm dev / pnpm build)
+pnpm rebuild:native
 ```
 
-Each rebuild recompiles native code and takes a minute or two on Windows.
-You only need to switch when moving between the two runtimes — running
-`pnpm test` twice in a row never needs a rebuild.
+This takes a minute or two. You rarely need it again — `pnpm install`
+already leaves a working Node binary in place (so `pnpm test` works out of
+the box), and `rebuild:native` is what makes `pnpm dev` work too.
+
+The single-runtime scripts still exist for targeted rebuilds if ever needed:
+
+```
+pnpm rebuild:node      # Node ABI only — overwrites build/Release/
+pnpm rebuild:electron  # Electron ABI only — overwrites build/Release/
+```
+
+Note these two overwrite the shared `build/Release/` file (they predate the
+dual-binary setup), so prefer `rebuild:native` unless you have a specific
+reason.
 
 ### 5. Open a pull request
 

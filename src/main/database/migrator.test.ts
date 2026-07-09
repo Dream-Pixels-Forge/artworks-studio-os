@@ -15,6 +15,7 @@ import {
   getCurrentVersion,
   type MigrationDatabase,
 } from "./migrator.js";
+import { nativeBindingOptions } from "./native-binding.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_V1 = readFileSync(join(__dirname, "schema/v1.sql"), "utf-8");
@@ -22,13 +23,16 @@ const SCHEMA_V1 = readFileSync(join(__dirname, "schema/v1.sql"), "utf-8");
 let createDb: () => MigrationDatabase;
 
 // Lazy-load the native driver once. Dynamic import keeps this ESM-clean and
-// fails loudly at runtime if the binding is unavailable.
+// fails loudly at runtime if the binding is unavailable. `nativeBindingOptions`
+// points vitest at the Node-ABI side binary so tests don't depend on which
+// runtime was rebuilt last (see scripts/build-native.mjs).
 beforeAll(async () => {
   const { default: BetterSqlite } = (await import("better-sqlite3")) as {
     default: typeof Database;
   };
+  const nativeOptions = nativeBindingOptions();
   createDb = (): MigrationDatabase => {
-    const db = new BetterSqlite(":memory:");
+    const db = new BetterSqlite(":memory:", nativeOptions);
     return {
       exec(sql, params = []) {
         db.prepare(sql).run(...params);
