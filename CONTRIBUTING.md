@@ -105,16 +105,19 @@ Both binaries coexist on disk and the runtime selects its own automatically
 `nativeBinding` option; Electron loads its default), so **`pnpm test` and
 `pnpm dev` work interchangeably with no manual switching**.
 
-Build both binaries once after a fresh clone (or after an `electron` /
-`better-sqlite3` version bump):
+The dual-binary build runs automatically as a `postinstall` hook on
+`pnpm install`, so a fresh clone leaves both binaries ready — no manual
+setup step. To rebuild explicitly (e.g. after an `electron` /
+`better-sqlite3` version bump, or to see the detailed output):
 
 ```
 pnpm rebuild:native
 ```
 
-This takes a minute or two. You rarely need it again — `pnpm install`
-already leaves a working Node binary in place (so `pnpm test` works out of
-the box), and `rebuild:native` is what makes `pnpm dev` work too.
+This takes a minute or two. In CI the Electron rebuild is skipped (only
+the test suite runs there, which needs the Node ABI), and a postinstall
+failure never blocks `pnpm install` — it logs a warning so you can re-run
+`pnpm rebuild:native` for the strict, detailed error.
 
 The single-runtime scripts still exist for targeted rebuilds if ever needed:
 

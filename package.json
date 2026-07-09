@@ -30,7 +30,8 @@
     "test:coverage": "vitest run --coverage",
     "rebuild:native": "node scripts/build-native.mjs",
     "rebuild:node": "pnpm rebuild better-sqlite3",
-    "rebuild:electron": "electron-rebuild -f -w better-sqlite3"
+    "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
+    "postinstall": "node scripts/build-native.mjs"
   },
   "dependencies": {
     "@xyflow/react": "^12.11.1",
