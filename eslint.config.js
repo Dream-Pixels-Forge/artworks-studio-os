@@ -44,4 +44,14 @@ export default [
       react: { version: "detect" },
     },
   },
+  {
+    // Node tooling scripts (e.g. scripts/build-native.mjs) run under Node,
+    // so they get Node globals. They aren't bundled into the app.
+    files: ["scripts/**/*.mjs", "scripts/**/*.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: { ...globals.node },
+    },
+  },
 ];

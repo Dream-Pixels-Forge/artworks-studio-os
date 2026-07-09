@@ -10,6 +10,7 @@
 import type Database from "better-sqlite3";
 import { createLogger } from "@main/core/logger.js";
 import { runMigrations, type MigrationDatabase, type MigrationSource } from "./migrator.js";
+import { nativeBindingOptions } from "./native-binding.js";
 
 const log = createLogger("database");
 
@@ -21,7 +22,7 @@ export class StudioDatabase implements MigrationDatabase {
     const { default: BetterSqlite } = (await import("better-sqlite3")) as {
       default: typeof Database;
     };
-    const db = new BetterSqlite(path);
+    const db = new BetterSqlite(path, nativeBindingOptions());
     db.pragma("journal_mode = WAL");
     db.pragma("foreign_keys = ON");
     const studio = new StudioDatabase(db);
@@ -35,7 +36,7 @@ export class StudioDatabase implements MigrationDatabase {
     const { default: BetterSqlite } = (await import("better-sqlite3")) as {
       default: typeof Database;
     };
-    const db = new BetterSqlite(":memory:");
+    const db = new BetterSqlite(":memory:", nativeBindingOptions());
     db.pragma("foreign_keys = ON");
     const studio = new StudioDatabase(db);
     runMigrations(studio, migrations);

@@ -89,6 +89,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Native module dual-ABI setup (better-sqlite3).** `pnpm rebuild:native`
+  now builds the native binary for *both* runtimes and stages them in
+  separate directories (`build/Release/` for Electron, `build/Release-node/`
+  for the vitest/Node suite). The runtime selects its own automatically
+  (`db.ts` points vitest at the Node-ABI side path via better-sqlite3's
+  `nativeBinding` option), so `pnpm test` and `pnpm dev` work
+  interchangeably with no manual ABI switching. Previously developers had
+  to alternate `pnpm rebuild:node` and `pnpm rebuild:electron`, which
+  overwrote each other.
 - Studio shell now renders `WorkspaceLayout` instead of a static
   explorer + main split.
 - `config.isDev` is now true during tests (`NODE_ENV=test`) so source
