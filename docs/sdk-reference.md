@@ -13,10 +13,9 @@ Audience: Plugin Developers, AI Agents
 This is the TypeScript-flavored companion to `docs/plugin-sdk.md`. Where
 `plugin-sdk.md` describes the SDK in capability terms, this document pins
 the concrete contract: the exact interfaces a plugin imports and
-implements. The interfaces live in `src/shared/sdk/`.
-
-This Phase 0 release defines the contract only — the plugin runtime that
-loads and sandboxes plugins arrives in Phase 1.
+implements. The interfaces live in `src/shared/sdk/`, and the runtime
+that loads, validates, and sandboxes plugins lives in
+`src/main/plugins/` (`PluginRuntime`).
 
 ## Import Surface
 

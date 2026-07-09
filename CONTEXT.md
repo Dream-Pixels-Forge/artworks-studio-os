@@ -104,8 +104,8 @@ layout reducer. Named workspaces (built-in "Storyboarding"/"Editing"/
 command palette and a workspace bar. Legacy `{slots, active}` localStorage
 layouts are migrated to the tree on load. The dead `artworks:open-panel`
 events are now wired (the 10 command-palette open-panel commands work).
-Float/detach-into-window is deferred to a follow-up. ADR 0004 records the
-hand-rolled (no library) decision.
+Float/detach-into-window is implemented (a panel can pop out into its own
+secondary window). ADR 0004 records the hand-rolled (no library) decision.
 
 Phase 2 (Production Workspace) — complete.
 
@@ -240,8 +240,8 @@ Hardening toward v1.0
 
 All eighteen roadmap phases are complete. The focus is now hardening:
 
-- Native-module tooling (better-sqlite3 dual-ABI: Node default, Electron
-  via `pnpm rebuild:electron`) — see CONTRIBUTING.md.
+- Native-module tooling (better-sqlite3 dual-ABI: Electron + Node binaries
+  coexist, auto-built via a `postinstall` hook — see CONTRIBUTING.md).
+  better-sqlite3 is on v12 for Node 24 / Electron 39 prebuilt support.
 - Performance profiling and memory work.
 - Packaging (electron-builder) and auto-update.
-- Upgrade better-sqlite3 to v12 for Node 24 prebuilt binaries.
