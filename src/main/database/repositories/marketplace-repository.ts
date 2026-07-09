@@ -192,7 +192,12 @@ export class MarketplaceRepository {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-    const sortColumn = filter.sortBy ?? "downloads";
+    // Whitelist the sort column: `sortBy` arrives over IPC from the renderer
+    // and is interpolated into `ORDER BY ${sortColumn}` (you can't bind an
+    // identifier with `?`). `sortDir` is already collapsed to ASC/DESC; do the
+    // same here so an unknown/arbitrary value can never reach the SQL text.
+    const SORT_COLUMNS = new Set(["name", "downloads", "rating", "created_at"]);
+    const sortColumn = SORT_COLUMNS.has(filter.sortBy ?? "") ? filter.sortBy! : "downloads";
     const sortDir = filter.sortOrder === "asc" ? "ASC" : "DESC";
     const limit = filter.limit ?? 50;
     const offset = filter.offset ?? 0;

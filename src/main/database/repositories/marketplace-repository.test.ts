@@ -528,3 +528,34 @@ describe("MarketplaceRepository — list with pagination", () => {
     expect(results).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// list sortBy whitelist (SQL injection regression)
+// ---------------------------------------------------------------------------
+
+describe("MarketplaceRepository — sortBy whitelist", () => {
+  // Regression: `filter.sortBy` arrives over IPC from the renderer and is
+  // interpolated into `ORDER BY ${sortColumn}`. TypeScript types are erased
+  // over IPC, so an arbitrary string could reach the SQL text. The repo now
+  // whitelists the value (defaulting to "downloads"), so adversarial input
+  // must NOT reach the SQL parser — it should silently fall back, not throw.
+  it.each([
+    "name; DROP TABLE marketplace_listings; --",
+    "(CASE WHEN 1=1 THEN name ELSE downloads END)",
+    "downloads DESC, uuid",
+    "",
+    "totally-fake-column",
+  ])("ignores a non-whitelisted sortBy (%s) instead of interpolating it", (sortBy) => {
+    publishSampleSet();
+    expect(() => repo.list({ sortBy: sortBy as never })).not.toThrow();
+    const results = repo.list({ sortBy: sortBy as never });
+    expect(Array.isArray(results)).toBe(true);
+  });
+
+  it("accepts the whitelisted columns without error", () => {
+    publishSampleSet();
+    for (const sortBy of ["name", "downloads", "rating", "created_at"] as const) {
+      expect(() => repo.list({ sortBy })).not.toThrow();
+    }
+  });
+});
