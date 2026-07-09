@@ -94,69 +94,94 @@ export class ProductionIntelligenceRepository {
   }
 
   activityMetrics(since?: string): ActivityMetrics {
-    const where = since ? `WHERE created_at >= '${since}'` : "";
+    // Parameterized: `since` is renderer-supplied and previously interpolated
+    // directly into the WHERE clause (SQL injection via the analytics IPC).
+    // Now bound as a placeholder; the where fragment and its params are built
+    // once and reused across every metric query below.
+    const whereSql = since ? "WHERE created_at >= ?" : "";
+    const whereParams: unknown[] = since ? [since] : [];
+
     const total =
-      this.db.get<{ c: number }>(`SELECT COUNT(*) AS c FROM activity_log ${where}`)?.c ?? 0;
+      this.db.get<{ c: number }>(`SELECT COUNT(*) AS c FROM activity_log ${whereSql}`, whereParams)?.c ?? 0;
 
     const byActionRows = this.db.all<{ action: string; c: number }>(
-      `SELECT action, COUNT(*) AS c FROM activity_log ${where} GROUP BY action ORDER BY c DESC`
+      `SELECT action, COUNT(*) AS c FROM activity_log ${whereSql} GROUP BY action ORDER BY c DESC`,
+      whereParams,
     );
     const byAction: Record<string, number> = {};
     for (const r of byActionRows) byAction[r.action] = r.c;
 
     const byUserRows = this.db.all<{ user_uuid: string; c: number }>(
-      `SELECT user_uuid, COUNT(*) AS c FROM activity_log ${where} GROUP BY user_uuid ORDER BY c DESC LIMIT 10`
+      `SELECT user_uuid, COUNT(*) AS c FROM activity_log ${whereSql} GROUP BY user_uuid ORDER BY c DESC LIMIT 10`,
+      whereParams,
     );
     const byUser: Record<string, number> = {};
     for (const r of byUserRows) byUser[r.user_uuid] = r.c;
 
     const byEntityRows = this.db.all<{ entity_type: string; c: number }>(
-      `SELECT entity_type, COUNT(*) AS c FROM activity_log ${where} GROUP BY entity_type ORDER BY c DESC`
+      `SELECT entity_type, COUNT(*) AS c FROM activity_log ${whereSql} GROUP BY entity_type ORDER BY c DESC`,
+      whereParams,
     );
     const byEntityType: Record<string, number> = {};
     for (const r of byEntityRows) byEntityType[r.entity_type] = r.c;
 
     const timelineRows = this.db.all<{ date: string; count: number }>(
-      `SELECT date(created_at) AS date, COUNT(*) AS count FROM activity_log ${where} GROUP BY date(created_at) ORDER BY date DESC LIMIT 30`
+      `SELECT date(created_at) AS date, COUNT(*) AS count FROM activity_log ${whereSql} GROUP BY date(created_at) ORDER BY date DESC LIMIT 30`,
+      whereParams,
     );
 
     return { total, byAction, byUser, byEntityType, timeline: timelineRows };
   }
 
   timelineAnalytics(projectUuid?: string): TimelineAnalytics {
-    const where = projectUuid
-      ? `WHERE t.project_uuid = '${projectUuid}'`
-      : "";
+    // Parameterized: `projectUuid` is renderer-supplied and previously
+    // interpolated directly (SQL injection via the analytics IPC). The where
+    // fragment text and its params are built once; queries that append an
+    // additional predicate extend both the fragment text AND the params array
+    // in lockstep so placeholders stay aligned.
+    const whereSql = projectUuid ? "WHERE t.project_uuid = ?" : "";
+    const whereParams: unknown[] = projectUuid ? [projectUuid] : [];
+
     const total =
       this.db.get<{ c: number }>(
-        `SELECT COUNT(*) AS c FROM timelines t ${where}`
+        `SELECT COUNT(*) AS c FROM timelines t ${whereSql}`,
+        whereParams,
       )?.c ?? 0;
 
     const avgRow = this.db.get<{ a: number }>(
-      `SELECT AVG(progress) AS a FROM timelines t ${where}`
+      `SELECT AVG(progress) AS a FROM timelines t ${whereSql}`,
+      whereParams,
     );
     const avgProgress = Math.round(avgRow?.a ?? 0);
 
+    // Overdue: extends the where clause with another predicate. The joiner
+    // (AND vs WHERE) depends on whether whereSql already started a WHERE.
+    const overdueJoiner = whereSql ? "AND" : "WHERE";
     const overdue =
       this.db.get<{ c: number }>(
-        `SELECT COUNT(*) AS c FROM timelines t ${where} ${where ? "AND" : "WHERE"} t.end_date < date('now') AND t.progress < 100`
+        `SELECT COUNT(*) AS c FROM timelines t ${whereSql} ${overdueJoiner} t.end_date < date('now') AND t.progress < 100`,
+        whereParams, // no new bound params — date('now') and 100 are literals
       )?.c ?? 0;
 
     const byPriorityRows = this.db.all<{ priority: string; c: number }>(
-      `SELECT priority, COUNT(*) AS c FROM timelines t ${where} GROUP BY priority`
+      `SELECT priority, COUNT(*) AS c FROM timelines t ${whereSql} GROUP BY priority`,
+      whereParams,
     );
     const byPriority: Record<string, number> = {};
     for (const r of byPriorityRows) byPriority[r.priority] = r.c;
 
     const byStatusRows = this.db.all<{ status: string; c: number }>(
-      `SELECT e.status, COUNT(*) AS c FROM timelines t JOIN entities e ON t.uuid = e.uuid ${where} GROUP BY e.status`
+      `SELECT e.status, COUNT(*) AS c FROM timelines t JOIN entities e ON t.uuid = e.uuid ${whereSql} GROUP BY e.status`,
+      whereParams,
     );
     const byStatus: Record<string, number> = {};
     for (const r of byStatusRows) byStatus[r.status] = r.c;
 
+    const completedJoiner = whereSql ? "AND" : "WHERE";
     const completed =
       this.db.get<{ c: number }>(
-        `SELECT COUNT(*) AS c FROM timelines t JOIN entities e ON t.uuid = e.uuid ${where} ${where ? "AND" : "WHERE"} e.status = 'final'`
+        `SELECT COUNT(*) AS c FROM timelines t JOIN entities e ON t.uuid = e.uuid ${whereSql} ${completedJoiner} e.status = 'final'`,
+        whereParams,
       )?.c ?? 0;
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
