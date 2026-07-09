@@ -92,19 +92,19 @@ Production Engine
 
 # Roadmap
 
-✅ Foundation
-- Project Management
-- Documentation
-- Git
-- Asset Management
+✅ Phases 0–18 — complete
 
-🚧 Knowledge Graph
+All eighteen roadmap phases are delivered: Foundation, Desktop Foundation
+(docking + workspace system), Production Workspace, Knowledge Graph, AI
+Workspace, Story Development, Prompt Intelligence, Asset Pipeline,
+Production Automation, Plugin Platform, Timeline, Collaboration, Studio
+Platform, AI Production Teams, Node-Based Production, Marketplace,
+Enterprise (RBAC), Production Intelligence, and the Production Operating
+System (lifecycle, notifications, backup/recovery, health, preferences).
 
-🚧 Visual Production Pipeline
+🚧 Hardening toward v1.0
 
-🚧 AI Production Automation
-
-🚧 Collaborative Cloud Studio
+Performance, packaging (electron-builder), and auto-update.
 
 ---
 

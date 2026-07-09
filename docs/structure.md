@@ -16,33 +16,37 @@ This document defines the canonical structure of the Artworks Studio OS reposito
 
 ```text
 artworks-studio-os/
-├── START_HERE.md
-├── MANIFESTO.md
+├── START-HERE.md
 ├── WHY.md
-├── AI_ONBOARDING.md
 ├── README.md
 ├── LICENSE
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
-├── PROJECT_STATE.md
+├── CONTEXT.md
+├── DECISIONS.md
+├── PRINCIPLES.md
 ├── docs/
 ├── src/
-├── tests/
-├── scripts/
-├── assets/
-├── templates/
-├── plugins/
-├── examples/
-├── config/
-├── tools/
-├── .github/
-└── .vscode/
+├── aw/                 # Python CLI sidecar
+├── scripts/            # build tooling (e.g. build-native.mjs)
+├── assets/             # branding, banners
+├── plugins/            # reference plugins (example-hello)
+└── .github/
 ```
+
+> Test files live alongside the source they cover (`*.test.ts` /
+> `*.test.tsx` next to the module under test), not in a separate `tests/`
+> tree.
 
 ## Source Layout
 
+The capability layout below is the *logical* model — the responsibilities
+the code is organized around. The physical Electron process split that
+hosts those capabilities is mapped in the **Platform Mapping** section
+(`src/main`, `src/preload`, `src/renderer`, `src/shared`).
+
 ```text
-src/
+src/                       # capabilities (logical view)
 ├── app/
 ├── core/
 ├── workspace/
@@ -90,85 +94,38 @@ src/
 
 ## Documentation Layout
 
-```text
-docs/
-├── 00_company/
-├── 01_product/
-├── 02_design/
-├── 03_engineering/
-├── 04_database/
-├── 05_api/
-├── 06_sdk/
-├── 07_ai/
-├── 08_ui/
-├── 09_plugins/
-├── 10_production/
-├── 11_testing/
-├── 12_release/
-├── 13_research/
-├── 14_decisions/
-└── 15_templates/
-```
+`docs/` is currently flat — one Markdown file per topic (architecture,
+database, design-system, philosophy, prd, roadmap, sdk-reference,
+specification, structure, ui-ux, vision, plugin-sdk, api-documentation).
+A numbered subdirectory tree is a future option as the set grows.
 
 ## Assets Layout
 
 ```text
 assets/
-├── branding/
-├── icons/
-├── fonts/
-├── images/
-├── videos/
-├── audio/
-├── illustrations/
-└── mockups/
-```
-
-## Templates
-
-```text
-templates/
-├── project/
-├── character/
-├── scene/
-├── shot/
-├── environment/
-├── plugin/
-└── documentation/
+├── banner.png        # README banner
+└── ...               # branding / imagery
 ```
 
 ## Scripts
 
 ```text
 scripts/
-├── bootstrap/
-├── build/
-├── release/
-├── development/
-├── testing/
-└── documentation/
+└── build-native.mjs  # dual-ABI better-sqlite3 build (run as postinstall)
 ```
 
 ## Plugins
 
 ```text
 plugins/
-├── official/
-├── community/
-└── experimental/
+└── example-hello/    # reference plugin
 ```
 
 ## Tests
 
-```text
-tests/
-├── unit/
-├── integration/
-├── performance/
-├── ui/
-├── e2e/
-└── fixtures/
-```
+Tests live alongside the source they cover — `*.test.ts` /
+`*.test.tsx` next to the module under test, run via vitest. There is no
+separate top-level `tests/` tree.
 
 ## Platform Mapping
 
@@ -179,17 +136,19 @@ module responsibilities and names are unchanged.
 ```text
 src/
 ├── main/              # Electron main process (Node)
-│   ├── app/           # → app (startup, lifecycle)
-│   ├── core/          # → core (command bus, service container, event bus)
-│   ├── database/      # → database (schema, migrations)
-│   ├── services/      # → services (filesystem, cache, notifications)
-│   ├── plugins/       # → plugins (discovery, loading, permissions)
+│   ├── app/           # → app (startup, window lifecycle)
+│   ├── core/          # → core (DI container, logger, config, event/command bus)
+│   ├── database/      # → database (schema v1–v10, migrations, 29 repositories)
+│   ├── services/      # → services (IPC handlers, AI gateway, CRDT, settings…)
+│   ├── plugins/       # → plugins (discovery, loading, runtime, permissions)
 │   └── integrations/  # → integrations (git, the `aw` CLI sidecar, AI providers)
-├── preload/           # Secure IPC bridge exposing a typed API to the renderer
+├── preload/           # Secure IPC bridge exposing a typed `window.artworks` API
 ├── renderer/          # React presentation layer (browser context)
-│   ├── app/           # shell, routing
+│   ├── app/           # shell, title bar, routing
+│   ├── command-palette/
+│   ├── panels/        # 27 panels (dashboard, ai-chat, timeline, marketplace…)
 │   ├── ui/            # → ui (tokens, themes, primitives)
-│   └── workspace/     # → workspace (docking, tabs, layout)
+│   └── workspace/     # → workspace (docking, tabs, layout, float-to-window)
 └── shared/            # Imported by both main + renderer
     ├── sdk/           # → plugin SDK contract
     ├── models/        # → models

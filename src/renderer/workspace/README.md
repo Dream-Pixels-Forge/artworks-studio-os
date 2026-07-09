@@ -23,7 +23,7 @@ Mutations flow through a pure reducer (`layout-reducer.ts`) as actions:
 Panels register themselves at import time via `panelRegistry.register()`
 with a `PanelDefinition` (id, title, icon, component, defaultSlot,
 defaultVisible). `builtin-panels.ts` imports every panel module so
-registration runs before the layout mounts. 30+ panels depend on the
+registration runs before the layout mounts. The 27 panels depend on the
 stable `PanelProps` contract — do not break it.
 
 ## Persistence
@@ -56,8 +56,8 @@ The command palette exposes `Workspace: Save Current As…`,
 `View: Toggle Bottom Panel`. The `artworks:open-panel` events dispatched
 by existing panel-open commands are now wired (previously dead).
 
-## Deferred
+## Float / detach into a separate window
 
-Float/detach panels into separate windows (#6 scope) is a follow-up — it
-needs a preload bridge for the existing `createSecondary()` plus a slim
-detached-panel route, and does not block Phase 1's definition of done.
+A panel can be popped out of the layout into its own secondary window via
+`single-panel-window.tsx`, backed by the preload bridge's
+`createSecondary()`. Implemented in #29 (Docking Framework #6 scope).

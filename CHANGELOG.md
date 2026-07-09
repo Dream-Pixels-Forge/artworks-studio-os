@@ -60,6 +60,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **SQL injection in renderer-supplied analytics queries (audit P1).**
+  `production-intelligence-repository.ts` interpolated `since` and
+  `projectUuid` directly into WHERE clauses, and
+  `marketplace-repository.ts` interpolated `sortBy` into `ORDER BY`. All
+  three are now bound as parameters (or, for the un-bindable sort
+  identifier, whitelisted against known columns). TypeScript types are
+  erased over IPC, so arbitrary strings could previously reach the parser.
+
+- **App crash on launch (better-sqlite3 ABI mismatch under Electron 39).**
+  The 11.x native binding targeted `NODE_MODULE_VERSION 137` (Node) but
+  Electron 39 requires 140, and 11.x wouldn't even compile against
+  Electron 39's V8 (`v8::Context::GetIsolate` removed). Bumped
+  `better-sqlite3` to `^12.11.1`, which ships Electron-39-compatible
+  prebuilts. The API surface the codebase uses is unchanged.
+
 - **Document list query (NULL vs empty string).** `listByProject("")`
   missed all documents with `project_uuid = NULL`. Added `listAll()`;
   IPC `production:document:list` now accepts optional `projectUuid`
