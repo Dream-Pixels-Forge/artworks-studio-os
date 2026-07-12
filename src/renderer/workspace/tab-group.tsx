@@ -9,6 +9,7 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
 import type { DockEdge, LayoutAction } from "./layout-reducer.js";
 import type { PanelDefinition, PanelProps, TabNode } from "./types.js";
+import { PanelIcon } from "./icons.js";
 
 export interface TabGroupProps {
   node: TabNode;
@@ -106,7 +107,7 @@ export function TabGroup({ node, panelDef, onAction, onDragStartPanel, onDragEnd
               onDragEnd={onDragEndPanel}
               onClick={() => onAction({ type: "SET_ACTIVE", nodeId: node.id, panelId })}
             >
-              {def?.icon ? <span className="tab-group__icon" aria-hidden>{def.icon}</span> : null}
+              {def ? <PanelIcon panelId={panelId} className="tab-group__icon" size={14} /> : null}
               <span className="tab-group__label">{def?.title ?? panelId}</span>
               <button
                 className="tab-group__detach"
