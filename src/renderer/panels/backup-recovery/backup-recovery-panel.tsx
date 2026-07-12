@@ -5,6 +5,7 @@
  * and backup stats. Phase 18.3.
  */
 import { useCallback, useEffect, useState, type ReactElement } from "react";
+import { panelRegistry } from "../../workspace/registry.js";
 
 
 interface BackupMeta {
@@ -270,3 +271,12 @@ export function BackupRecoveryPanel(): ReactElement {
       </div>
   );
 }
+
+panelRegistry.register({
+  id: "backup-recovery",
+  title: "Backup & Recovery",
+  icon: "\u{1f6e1}", // 🛡️
+  component: BackupRecoveryPanel,
+  defaultSlot: "center",
+  defaultVisible: false,
+});
