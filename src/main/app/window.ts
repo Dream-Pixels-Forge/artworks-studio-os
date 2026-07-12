@@ -59,7 +59,16 @@ export function createWindow(options: CreateWindowOptions): BrowserWindow {
       preload: getPreloadPath(),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      // NOTE: `sandbox: true` breaks this preload. The preload is bundled as
+      // ESM (`out/preload/index.mjs`, `import { contextBridge } from "electron"`)
+      // and uses contextBridge to expose `window.artworks`. Under sandbox mode,
+      // Electron requires a CommonJS preload that uses `require()`, and an ESM
+      // preload silently fails to expose the bridge — leaving `window.artworks`
+      // undefined so the renderer blanks on mount (every component reads
+      // `window.artworks.*`). We keep contextIsolation:true (the real security
+      // boundary) and nodeIntegration:false, which is the standard safe config
+      // for a contextBridge preload.
+      sandbox: false,
     },
   });
 

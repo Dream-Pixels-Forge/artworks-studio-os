@@ -12,6 +12,7 @@
  */
 import type { ReactNode, MouseEvent } from "react";
 import { panelRegistry } from "./registry.js";
+import { PanelIcon } from "./icons.js";
 // Side-effect import: registers every built-in panel so the registry lookup
 // below can resolve any of them. Same effect as the main shell gets on boot.
 import "./index.js";
@@ -47,7 +48,7 @@ export function SinglePanelWindow({ panelId }: SinglePanelWindowProps): ReactNod
   return (
     <div className="single-panel-window">
       <div className="single-panel-window__bar">
-        {def.icon ? <span className="single-panel-window__icon" aria-hidden>{def.icon}</span> : null}
+        <PanelIcon panelId={panelId} className="single-panel-window__icon" size={14} />
         <span className="single-panel-window__title">{def.title}</span>
         <button className="single-panel-window__close" aria-label="Close window" onClick={close}>×</button>
       </div>

@@ -5,6 +5,7 @@
  * and stats overview. Shows a live badge in the panel title.
  */
 import React, { useCallback, useEffect, useState, type ReactElement } from "react";
+import { panelRegistry } from "../../workspace/registry.js";
 
 
 type NotificationType =
@@ -330,3 +331,12 @@ export function NotificationCenterPanel(): ReactElement {
       </div>
   );
 }
+
+panelRegistry.register({
+  id: "notification-center",
+  title: "Notifications",
+  icon: "\u{1f514}", // 🔔
+  component: NotificationCenterPanel,
+  defaultSlot: "center",
+  defaultVisible: false,
+});
