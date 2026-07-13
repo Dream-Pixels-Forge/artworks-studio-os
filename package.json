@@ -25,6 +25,7 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "pnpm typecheck:node && pnpm typecheck:web",
     "lint": "eslint .",
+    "lint:tokens": "node scripts/check-tokens.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
