@@ -191,6 +191,33 @@ Components consume tokens via CSS custom properties:
 
 Themes swap by re-injecting the semantic tokens via `loadTokens("studio-light")`.
 
+## Enforcement
+
+The "no hardcoded values" rule above is machine-checked by
+`scripts/check-tokens.mjs` (`pnpm lint:tokens`), wired into CI after Lint.
+It scans `src/renderer/` for two classes of bypass:
+
+- **Colors** — any hex / `rgb()` / `rgba()` / `hsl()` / `hsla()` literal
+  outside `src/renderer/ui/tokens/`. If you need a color, add a token and
+  consume it via `var(--color-…)`. There is no color allowlist by design.
+- **Spacing** — any raw `Npx` value on a `padding`, `margin`, or `gap`
+  declaration (in CSS or an inline `style={{…}}`) instead of a spacing
+  token (`var(--space-N)`). `1px` borders are exempt (hairlines, off the
+  4px scale by convention).
+
+### Baseline-driven
+
+The renderer carries pre-existing debt from panels written before the token
+layer was adopted. Rather than block all work on it, every violation that
+existed when the audit was introduced is snapshotted in
+`scripts/check-tokens.baseline.json`. The check passes as long as nothing
+*new* appears; each baseline entry is a retireable debt item.
+
+**To retire a violation:** fix the source to use a token, then run
+`node scripts/check-tokens.mjs --update` and commit the (smaller) baseline.
+The count should only ever go down. When it reaches zero, the check becomes
+absolute.
+
 ---
 
 End of Document
