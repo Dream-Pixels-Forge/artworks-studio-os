@@ -40,6 +40,8 @@ export { AgentMessageRepository } from "./agent-message-repository.js";
 export type { AgentMessage, CreateMessageInput } from "./agent-message-repository.js";
 export { NodeWorkflowRepository } from "./node-workflow-repository.js";
 export type { NodeWorkflow, CreateNodeWorkflowInput, NodeWorkflowMeta } from "./node-workflow-repository.js";
+export { NodeRunRepository } from "./node-run-repository.js";
+export type { NodeWorkflowRun, NodeRunStep, NodeRunStepPatch, NodeWorkflowRunWithSteps } from "./node-run-repository.js";
 export { MarketplaceRepository } from "./marketplace-repository.js";
 export type { MarketplaceListing, PublishListingInput, ListingFilter, RateListingInput, MarketplaceCategory, MarketplaceType } from "./marketplace-repository.js";
 export { TeamRepository } from "./team-repository.js";

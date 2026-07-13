@@ -449,6 +449,49 @@ const artworksApi = {
         ipcRenderer.invoke("production:nodeWorkflow:listByStatus", status),
       stats: () =>
         ipcRenderer.invoke("production:nodeWorkflow:stats"),
+      /** Kick off a graph run. Returns the runId; subscribe via nodeExecution.subscribe. */
+      run: (uuid: string) =>
+        ipcRenderer.invoke("node:run", uuid) as Promise<{ runId: string } | { error: string }>,
+      /** Abort an in-flight run by runId. */
+      cancelRun: (runId: string) =>
+        ipcRenderer.invoke("node:cancel", runId) as Promise<boolean>,
+      /** Recent runs for a workflow (newest first). */
+      listRuns: (uuid: string) =>
+        ipcRenderer.invoke("node:listRuns", uuid),
+      /** A single run with its per-node step history. */
+      getRun: (runId: string) =>
+        ipcRenderer.invoke("node:getRun", runId),
+    },
+  },
+
+  /** Node-graph execution — subscribe to the live event stream for a run. */
+  nodeExecution: {
+    /**
+     * Subscribe to execution events for a run. Returns an unsubscribe fn.
+     * Mirrors the ai.stream().subscribe() pattern.
+     */
+    subscribe: (
+      runId: string,
+      onEvent: (event: {
+        type: string;
+        runId?: string;
+        nodeId?: string;
+        nodeKind?: string;
+        output?: unknown;
+        error?: string;
+        reason?: string;
+        orderedNodeIds?: string[];
+      }) => void,
+    ): (() => void) => {
+      const listener = (
+        _event: unknown,
+        id: string,
+        chunk: { type: string },
+      ) => {
+        if (id === runId) onEvent(chunk as Parameters<typeof onEvent>[0]);
+      };
+      ipcRenderer.on("node:execution:event", listener);
+      return () => ipcRenderer.off("node:execution:event", listener);
     },
   },
 

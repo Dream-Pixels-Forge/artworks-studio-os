@@ -17,6 +17,7 @@ import { StudioDatabase } from "@main/database/db.js";
 import { PluginRuntime } from "@main/plugins/index.js";
 import { ThemeService, registerThemeIpc, SettingsService, registerSettingsIpc, registerStudioStatusIpc } from "@main/services/index.js";
 import { registerProductionIpc } from "@main/services/production-ipc.js";
+import { registerNodeExecutionIpc } from "@main/services/node-execution/node-execution-ipc.js";
 import { registerPluginIpc } from "@main/services/plugin-ipc.js";
 import { registerMarketplaceIpc } from "@main/services/marketplace-ipc.js";
 import { registerEnterpriseIpc } from "@main/services/enterprise-ipc.js";
@@ -96,6 +97,9 @@ app.whenReady().then(async () => {
 
   // Register production IPC (project, asset, document, search, AI gateway).
   registerProductionIpc(database, apiKeyService);
+
+  // Register node-graph execution IPC (GraphExecutor: run/cancel/listRuns).
+  registerNodeExecutionIpc(database, apiKeyService);
 
   // Register plugin IPC (install, enable/disable, uninstall, executeCommand).
   registerPluginIpc(database, pluginRuntime);

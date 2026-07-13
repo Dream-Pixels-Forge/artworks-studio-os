@@ -33,11 +33,27 @@ export interface ProjectClosedPayload {
   readonly projectId: string;
 }
 
+/** Emitted when a node-graph execution run starts. */
+export interface NodeExecutionStartedPayload {
+  readonly runId: string;
+  readonly workflowUuid: string;
+}
+
+/** Emitted when a node-graph execution run reaches a terminal state. */
+export interface NodeExecutionFinishedPayload {
+  readonly runId: string;
+  readonly workflowUuid: string;
+  readonly status: "completed" | "failed" | "cancelled" | "awaiting-review";
+  readonly error?: string;
+}
+
 export type StudioEvent =
   | { type: "asset:created"; payload: AssetCreatedPayload }
   | { type: "scene:updated"; payload: SceneUpdatedPayload }
   | { type: "character:modified"; payload: CharacterModifiedPayload }
   | { type: "project:opened"; payload: ProjectOpenedPayload }
-  | { type: "project:closed"; payload: ProjectClosedPayload };
+  | { type: "project:closed"; payload: ProjectClosedPayload }
+  | { type: "node:execution:started"; payload: NodeExecutionStartedPayload }
+  | { type: "node:execution:finished"; payload: NodeExecutionFinishedPayload };
 
 export type StudioEventType = StudioEvent["type"];

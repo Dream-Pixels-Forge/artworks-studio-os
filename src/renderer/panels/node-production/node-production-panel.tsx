@@ -26,6 +26,7 @@ import {
   type OnSelectionChangeFunc,
 } from "@xyflow/react";
 import { panelRegistry } from "../../workspace/registry.js";
+import type { NodeKind, NodeRunStatus } from "@shared/production/node-types.js";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,17 @@ interface ProductionNodeData extends Record<string, unknown> {
   category: NodeCategory;
   description?: string;
   status?: string;
+  /** Semantic kind — what the GraphExecutor dispatches on. Absent → pass-through. */
+  nodeKind?: NodeKind;
+  /** Execution config for this node's kind. */
+  config?: {
+    prompt?: string;
+    systemPrompt?: string;
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+    [key: string]: unknown;
+  };
 }
 
 // ─── Node Type Colors ───────────────────────────────────────────────────────
@@ -271,9 +283,26 @@ function NodePropertyPanel({ node, onUpdate, onClose, onDelete }: NodePropertyPa
   const [description, setDescription] = useState(node.data.description ?? "");
   const [status, setStatus] = useState(node.data.status ?? "");
   const [category, setCategory] = useState<NodeCategory>(node.data.category);
+  // Kind-specific config (text-generation / prompt-template / stubbed media).
+  const [prompt, setPrompt] = useState(node.data.config?.prompt ?? "");
+  const [systemPrompt, setSystemPrompt] = useState(node.data.config?.systemPrompt ?? "");
+  const [model, setModel] = useState(node.data.config?.model ?? "");
+  const [temperature, setTemperature] = useState(node.data.config?.temperature ?? 0.7);
+  const [maxTokens, setMaxTokens] = useState(node.data.config?.maxTokens ?? 1024);
 
   const handleSave = () => {
-    onUpdate(node.id, { label, description, status, category });
+    const kind = node.data.nodeKind;
+    // Only attach config fields that are meaningful for this kind.
+    const config =
+      kind === "text-generation" || kind === "prompt-template"
+        ? {
+            prompt,
+            ...(kind === "text-generation"
+              ? { systemPrompt, model, temperature, maxTokens }
+              : {}),
+          }
+        : node.data.config ?? {};
+    onUpdate(node.id, { label, description, status, category, config });
   };
 
   const colors = NODE_COLORS[category];
@@ -412,6 +441,46 @@ function NodePropertyPanel({ node, onUpdate, onClose, onDelete }: NodePropertyPa
           />
         </div>
 
+        {/* Kind-specific execution config */}
+        {node.data.nodeKind === "text-generation" && (
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", fontSize: 11, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
+              Prompt (supports {"{{nodeId.output}}"})
+            </label>
+            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={4} placeholder="Write a scene where…" style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 4, fontSize: 13, resize: "vertical", boxSizing: "border-box", background: "var(--surface-hover)", color: "var(--text-primary)" }} />
+            <label style={{ display: "block", fontSize: 11, marginTop: 8, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>Model</label>
+            <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. gpt-4o-mini" style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: "var(--surface-hover)", color: "var(--text-primary)" }} />
+            <label style={{ display: "block", fontSize: 11, marginTop: 8, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>System Prompt (optional)</label>
+            <textarea value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} rows={2} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 4, fontSize: 13, resize: "vertical", boxSizing: "border-box", background: "var(--surface-hover)", color: "var(--text-primary)" }} />
+            <label style={{ display: "block", fontSize: 11, marginTop: 8, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>Temperature</label>
+            <input type="number" step="0.1" min="0" max="2" value={temperature} onChange={(e) => setTemperature(Number(e.target.value))} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: "var(--surface-hover)", color: "var(--text-primary)" }} />
+            <label style={{ display: "block", fontSize: 11, marginTop: 8, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>Max Tokens</label>
+            <input type="number" step="64" min="1" value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: "var(--surface-hover)", color: "var(--text-primary)" }} />
+          </div>
+        )}
+        {node.data.nodeKind === "prompt-template" && (
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", fontSize: 11, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
+              Template (supports {"{{nodeId.output}}"})
+            </label>
+            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={4} placeholder="Character: {{char.output}} in scene: {{scene.output}}" style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 4, fontSize: 13, resize: "vertical", boxSizing: "border-box", background: "var(--surface-hover)", color: "var(--text-primary)" }} />
+          </div>
+        )}
+        {(node.data.nodeKind === "image-generation" ||
+          node.data.nodeKind === "video-generation" ||
+          node.data.nodeKind === "audio-generation" ||
+          node.data.nodeKind === "voice-synthesis" ||
+          node.data.nodeKind === "export") && (
+          <div style={{ marginBottom: 12, padding: "8px 10px", background: "var(--surface-hover)", borderRadius: 4, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+            Runner not yet implemented. The node is valid and its config is stored; generation for {node.data.nodeKind} arrives in a follow-up.
+          </div>
+        )}
+        {node.data.nodeKind === "review-gate" && (
+          <div style={{ marginBottom: 12, padding: "8px 10px", background: "var(--surface-hover)", borderRadius: 4, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+            Execution halts here and waits for human review. The run ends in <code>awaiting-review</code> status.
+          </div>
+        )}
+
         {/* Preview */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: "block", fontSize: 11, marginBottom: 4, color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
@@ -506,11 +575,29 @@ function NodePropertyPanel({ node, onUpdate, onClose, onDelete }: NodePropertyPa
 interface ProductionNodeExtraProps {
   onContextMenu: (e: MouseEvent, nodeId: string) => void;
   onDoubleClick: (nodeId: string) => void;
+  runStatus?: NodeRunStatus;
 }
 
-function ProductionNode({ data, selected, id, onContextMenu, onDoubleClick }: NodeProps<Node<ProductionNodeData>> & ProductionNodeExtraProps) {
+/** Color + label for the per-node run-status badge. Driven by tokens. */
+function runStatusBadge(status?: NodeRunStatus): { color: string; label: string } | null {
+  switch (status) {
+    case "running":
+      return { color: "var(--warning)", label: "running" };
+    case "completed":
+      return { color: "var(--success)", label: "done" };
+    case "failed":
+      return { color: "var(--danger)", label: "failed" };
+    case "skipped":
+      return { color: "var(--text-muted)", label: "skipped" };
+    default:
+      return null;
+  }
+}
+
+function ProductionNode({ data, selected, id, onContextMenu, onDoubleClick, runStatus }: NodeProps<Node<ProductionNodeData>> & ProductionNodeExtraProps) {
   const nodeData = data as ProductionNodeData;
   const colors = NODE_COLORS[nodeData.category] ?? NODE_COLORS.production;
+  const badge = runStatusBadge(runStatus);
 
   return (
     <div
@@ -550,6 +637,22 @@ function ProductionNode({ data, selected, id, onContextMenu, onDoubleClick }: No
         {nodeData.status && (
           <div style={{ fontSize: 10, color: colors.border, marginTop: 6 }}>{nodeData.status}</div>
         )}
+        {badge && (
+          <div style={{
+            display: "inline-block",
+            marginTop: 6,
+            padding: "2px 8px",
+            fontSize: 10,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: 0.4,
+            color: "var(--text-primary)",
+            background: badge.color,
+            borderRadius: 9999,
+          }}>
+            {badge.label}
+          </div>
+        )}
       </div>
 
       {/* Handles */}
@@ -583,31 +686,34 @@ interface PaletteItem {
   category: NodeCategory;
   label: string;
   description: string;
+  /** Semantic node kind — determines which GraphExecutor runner handles it. */
+  kind: NodeKind;
 }
 
 const NODE_PALETTE: PaletteItem[] = [
-  // Production
-  { category: "production", label: "Script", description: "Script or screenplay input" },
-  { category: "production", label: "Storyboard", description: "Visual storyboard planning" },
-  { category: "production", label: "Asset Pipeline", description: "Asset creation and management" },
-  { category: "production", label: "Assembly", description: "Final assembly and output" },
-  // AI
-  { category: "ai", label: "Image Gen", description: "AI image generation (DALL-E, Midjourney)" },
-  { category: "ai", label: "Video Gen", description: "AI video generation (Sora, Runway)" },
-  { category: "ai", label: "Audio Gen", description: "AI audio/music generation" },
-  { category: "ai", label: "Voice Synth", description: "AI voice synthesis and dialogue" },
+  // Production (organizational — pass-through by default)
+  { category: "production", label: "Script", description: "Script or screenplay input", kind: "pass-through" },
+  { category: "production", label: "Storyboard", description: "Visual storyboard planning", kind: "pass-through" },
+  { category: "production", label: "Asset Pipeline", description: "Asset creation and management", kind: "pass-through" },
+  { category: "production", label: "Assembly", description: "Final assembly and output", kind: "pass-through" },
+  // AI generation (text runs; media kinds are parameterized but stubbed)
+  { category: "ai", label: "Text Gen", description: "LLM text generation (prompt → completion)", kind: "text-generation" },
+  { category: "ai", label: "Image Gen", description: "AI image generation (stubbed — runner pending)", kind: "image-generation" },
+  { category: "ai", label: "Video Gen", description: "AI video generation (stubbed — runner pending)", kind: "video-generation" },
+  { category: "ai", label: "Audio Gen", description: "AI audio/music generation (stubbed — runner pending)", kind: "audio-generation" },
+  { category: "ai", label: "Voice Synth", description: "AI voice synthesis and dialogue (stubbed — runner pending)", kind: "voice-synthesis" },
   // Prompt
-  { category: "prompt", label: "Prompt Template", description: "Reusable prompt template" },
-  { category: "prompt", label: "Prompt Chain", description: "Multi-step prompt chain" },
-  { category: "prompt", label: "Context", description: "Context or reference input" },
+  { category: "prompt", label: "Prompt Template", description: "Renders {{nodeId.output}} placeholders — no LLM call", kind: "prompt-template" },
+  { category: "prompt", label: "Prompt Chain", description: "Multi-step prompt chain", kind: "prompt-template" },
+  { category: "prompt", label: "Context", description: "Context or reference input", kind: "pass-through" },
   // Review
-  { category: "review", label: "Review Gate", description: "Human review checkpoint" },
-  { category: "review", label: "Quality Check", description: "Automated quality validation" },
-  { category: "review", label: "Feedback", description: "Feedback collection point" },
-  // Publishing
-  { category: "publishing", label: "Export", description: "Export to file or format" },
-  { category: "publishing", label: "Publish", description: "Publish to platform or service" },
-  { category: "publishing", label: "Archive", description: "Archive completed work" },
+  { category: "review", label: "Review Gate", description: "Halts the run for human review", kind: "review-gate" },
+  { category: "review", label: "Quality Check", description: "Automated quality validation", kind: "review-gate" },
+  { category: "review", label: "Feedback", description: "Feedback collection point", kind: "review-gate" },
+  // Publishing (stubbed)
+  { category: "publishing", label: "Export", description: "Export to file or format (stubbed — runner pending)", kind: "export" },
+  { category: "publishing", label: "Publish", description: "Publish to platform or service", kind: "export" },
+  { category: "publishing", label: "Archive", description: "Archive completed work", kind: "export" },
 ];
 
 // ─── Helper: Generate unique ID ─────────────────────────────────────────────
@@ -642,6 +748,12 @@ export function NodeProductionPanel() {
 
   // Node property panel state
   const [editingNode, setEditingNode] = useState<Node<ProductionNodeData> | null>(null);
+
+  // Graph execution state — per-node run status keyed by node id, plus the
+  // active run id (null when idle). Drives the Run/Cancel button + the
+  // colored status overlay on each node.
+  const [nodeRunStatuses, setNodeRunStatuses] = useState<Map<string, NodeRunStatus>>(new Map());
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
   // Selected node/edge IDs
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
@@ -745,6 +857,65 @@ export function NodeProductionPanel() {
       console.error("Failed to load workflow:", err);
     }
   }, []);
+
+  // ─── Run graph (GraphExecutor) ────────────────────────────────────────────
+
+  const handleRun = useCallback(async () => {
+    if (!selectedWorkflow || activeRunId) return;
+    // Persist the current graph before running so the executor sees the
+    // latest node/edge state.
+    const viewport = reactFlowInstance?.getViewport() ?? { x: 0, y: 0, zoom: 1 };
+    try {
+      await window.artworks.production.nodeWorkflow.updateGraph(
+        selectedWorkflow.uuid,
+        JSON.stringify(nodes),
+        JSON.stringify(edges),
+        JSON.stringify(viewport),
+      );
+    } catch (err) {
+      console.error("Failed to save before run:", err);
+      return;
+    }
+
+    setNodeRunStatuses(new Map());
+    const result = await window.artworks.production.nodeWorkflow.run(selectedWorkflow.uuid);
+    if ("error" in result) {
+      console.error("Run failed to start:", result.error);
+      return;
+    }
+    setActiveRunId(result.runId);
+
+    // Subscribe to the live event stream and reflect status on each node.
+    const off = window.artworks.nodeExecution.subscribe(result.runId, (event) => {
+      switch (event.type) {
+        case "node:started":
+          setNodeRunStatuses((m) => new Map(m).set(event.nodeId!, "running"));
+          break;
+        case "node:completed":
+          setNodeRunStatuses((m) => new Map(m).set(event.nodeId!, "completed"));
+          break;
+        case "node:failed":
+          setNodeRunStatuses((m) => new Map(m).set(event.nodeId!, "failed"));
+          break;
+        case "node:skipped":
+          setNodeRunStatuses((m) => new Map(m).set(event.nodeId!, "skipped"));
+          break;
+        case "run:completed":
+        case "run:failed":
+        case "run:cancelled":
+          setActiveRunId(null);
+          off();
+          break;
+        default:
+          break;
+      }
+    });
+  }, [selectedWorkflow, activeRunId, nodes, edges, reactFlowInstance]);
+
+  const handleCancelRun = useCallback(async () => {
+    if (!activeRunId) return;
+    await window.artworks.production.nodeWorkflow.cancelRun(activeRunId);
+  }, [activeRunId]);
 
   // ─── Save workflow ────────────────────────────────────────────────────────
 
@@ -957,6 +1128,8 @@ export function NodeProductionPanel() {
           label: item.label,
           category: item.category,
           description: item.description,
+          nodeKind: item.kind,
+          config: {},
         },
         position,
       };
@@ -975,10 +1148,11 @@ export function NodeProductionPanel() {
           {...props}
           onContextMenu={handleContextMenu}
           onDoubleClick={handleDoubleClickNode}
+          runStatus={nodeRunStatuses.get(props.id)}
         />
       ),
     }),
-    [handleContextMenu, handleDoubleClickNode],
+    [handleContextMenu, handleDoubleClickNode, nodeRunStatuses],
   );
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -1030,6 +1204,37 @@ export function NodeProductionPanel() {
               >
                 {isSaving ? "Saving..." : "Save"}
               </button>
+              {activeRunId ? (
+                <button
+                  onClick={handleCancelRun}
+                  style={{
+                    padding: "6px 14px",
+                    background: "var(--danger, #e53170)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    fontSize: 12,
+                  }}
+                >
+                  ■ Cancel
+                </button>
+              ) : (
+                <button
+                  onClick={handleRun}
+                  style={{
+                    padding: "6px 14px",
+                    background: "var(--accent)",
+                    color: "var(--text-primary)",
+                    border: "none",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    fontSize: 12,
+                  }}
+                >
+                  ▶ Run
+                </button>
+              )}
               <button
                 onClick={() => handleDelete(selectedWorkflow.uuid)}
                 style={{
