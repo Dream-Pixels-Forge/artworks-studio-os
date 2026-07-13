@@ -15,9 +15,10 @@ import v7 from "./schema/v7.sql?raw";
 import v8 from "./schema/v8.sql?raw";
 import v9 from "./schema/v9.sql?raw";
 import v10 from "./schema/v10.sql?raw";
+import v11 from "./schema/v11.sql?raw";
 
 /** All bundled migrations, keyed by version number. */
 export const MIGRATIONS: MigrationSource = new Map<number, string>([
   [1, v1], [2, v2], [3, v3], [4, v4], [5, v5],
-  [6, v6], [7, v7], [8, v8], [9, v9], [10, v10],
+  [6, v6], [7, v7], [8, v8], [9, v9], [10, v10], [11, v11],
 ]);

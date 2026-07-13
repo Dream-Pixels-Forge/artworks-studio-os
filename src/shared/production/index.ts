@@ -47,3 +47,6 @@ export const PRODUCTION_STAGES: readonly ProductionStage[] = [
   "post",
   "publishing",
 ] as const;
+
+// Node-graph execution contract (shared by renderer + main).
+export * from "./node-types.js";

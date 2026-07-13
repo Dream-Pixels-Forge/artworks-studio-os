@@ -237,7 +237,28 @@ interface ArtworksApi {
       delete: (uuid: string) => Promise<unknown>;
       listByStatus: (status: "draft" | "active" | "archived") => Promise<unknown>;
       stats: () => Promise<unknown>;
+      run: (uuid: string) => Promise<{ runId: string } | { error: string }>;
+      cancelRun: (runId: string) => Promise<boolean>;
+      listRuns: (uuid: string) => Promise<unknown>;
+      getRun: (runId: string) => Promise<unknown>;
     };
+  };
+
+  /** Node-graph execution — live event stream subscription. */
+  nodeExecution: {
+    subscribe: (
+      runId: string,
+      onEvent: (event: {
+        type: string;
+        runId?: string;
+        nodeId?: string;
+        nodeKind?: string;
+        output?: unknown;
+        error?: string;
+        reason?: string;
+        orderedNodeIds?: string[];
+      }) => void,
+    ) => () => void;
   };
 
   plugin: {
